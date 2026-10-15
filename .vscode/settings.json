@@ -1,0 +1,6 @@
+{
+  "editor.colorDecorators": true,
+  "tailwindCSS.classAttributes": ["class", "className"],
+  "tailwindCSS.experimental.configFile": "tailwind.config.js",
+  "tailwindCSS.colorDecorators": true
+}
