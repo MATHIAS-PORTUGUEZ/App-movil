@@ -157,8 +157,22 @@ export function useBarberShop(service: BarberShopService) {
     setScreen('register');
   };
 
-  const refreshAvailability = () => {
-    if (form.appointmentDate) void loadAvailability(form.appointmentDate);
+  const refreshAvailability = async () => {
+    if (!form.appointmentDate || isLoadingAvailability) return;
+
+    setIsLoadingAvailability(true);
+    setAvailabilityError('');
+    try {
+      await service.pruneExpiredRequests();
+      await loadAvailability(form.appointmentDate);
+    } catch (error) {
+      setAvailabilityError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudieron actualizar los horarios.',
+      );
+      setIsLoadingAvailability(false);
+    }
   };
 
   const selectService = (service: ServiceType | '') => {

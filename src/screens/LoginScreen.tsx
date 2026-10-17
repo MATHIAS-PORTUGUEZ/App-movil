@@ -70,7 +70,6 @@ export function LoginScreen({
         <ActionButton
           label={isSigningIn ? 'Ingresando…' : 'Ingresar'}
           onPress={onSignIn}
-          icon={isSigningIn ? undefined : 'arrow'}
           disabled={isSigningIn}
           accessibilityHint="Valida tus datos e inicia sesión"
         />

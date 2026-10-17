@@ -118,7 +118,7 @@ export function RegisterScreen({
         hitSlop={8}
         className="min-h-[44px] self-start justify-center rounded-lg px-3 active:opacity-70"
       >
-        <Text className="font-semibold text-white">←  Servicios</Text>
+        <Text className="font-semibold text-white">Servicios</Text>
       </Pressable>
 
       <View>
@@ -210,7 +210,8 @@ export function RegisterScreen({
       </SurfaceCard>
 
       <SurfaceCard className="gap-4 p-4">
-        <View>
+        <View className="flex-row items-center justify-between">
+          <View className="flex-1">
           <Text className="text-lg font-bold text-white">Horarios</Text>
           <Text className="mt-1 text-sm text-white/75">
             {isLoadingAvailability
@@ -221,6 +222,26 @@ export function RegisterScreen({
               ? `Disponibles para el ${formatSelectedDate(form.appointmentDate)}`
               : 'Primero selecciona un día'}
           </Text>
+          </View>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Actualizar horarios disponibles"
+            accessibilityState={{
+              disabled: !form.appointmentDate || isLoadingAvailability,
+            }}
+            disabled={!form.appointmentDate || isLoadingAvailability}
+            onPress={onRefreshAvailability}
+            className={`ml-2 min-h-10 flex-row items-center justify-center gap-1 rounded-lg border border-white/50 px-3 ${
+              !form.appointmentDate || isLoadingAvailability
+                ? 'opacity-50'
+                : 'bg-[#1900ff] active:opacity-70'
+            }`}
+          >
+            <Text className="text-base font-bold text-white">↻</Text>
+            <Text className="text-xs font-bold text-white">
+              {isLoadingAvailability ? 'Actualizando' : 'Actualizar'}
+            </Text>
+          </Pressable>
         </View>
         {availabilityError ? (
           <View className="gap-2">
@@ -369,7 +390,6 @@ export function RegisterScreen({
           label={isSubmitting ? 'Enviando solicitud…' : 'Confirmar cita'}
           onPress={onSubmit}
           variant="success"
-          icon={isSubmitting ? undefined : 'check'}
           disabled={isSubmitting}
           accessibilityHint="Envía tu solicitud de cita"
         />

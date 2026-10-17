@@ -86,7 +86,7 @@ export function HomeScreen({
     <View className="flex-1 gap-5 py-8">
       <View className="flex-row items-center justify-between">
         <Text className="text-sm font-bold uppercase tracking-[2px] text-white">
-          BRAVO BARBERÍA
+          BARBERÍA
         </Text>
         <Pressable
           accessibilityRole="button"
@@ -305,7 +305,7 @@ export function HomeScreen({
             })}
           </SurfaceCard>
           <Text className="text-xs leading-5 text-white/70">
-            Promociones de ejemplo, sujetas a confirmación de la barbería.
+            Promociones de tu barberia preferida.
           </Text>
         </View>
       ) : null}
@@ -327,7 +327,6 @@ export function HomeScreen({
           label="Elegir fecha y horario"
           onPress={onRegister}
           variant="success"
-          icon="arrow"
           disabled={!canContinue}
           accessibilityHint="Continúa para elegir día, horario y completar tus datos"
         />

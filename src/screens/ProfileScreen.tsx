@@ -74,7 +74,7 @@ export function ProfileScreen({
         onPress={onBack}
         className="min-h-11 self-start justify-center px-2"
       >
-        <Text className="font-semibold text-white">←  Volver al inicio</Text>
+        <Text className="font-semibold text-white">Volver al inicio</Text>
       </Pressable>
 
       <View>
@@ -145,7 +145,6 @@ export function ProfileScreen({
         <ActionButton
           label={isSaving ? 'Guardando…' : 'Guardar cambios'}
           onPress={save}
-          icon={isSaving ? undefined : 'check'}
           disabled={isSaving}
         />
       </SurfaceCard>
@@ -153,7 +152,6 @@ export function ProfileScreen({
         label="Cerrar sesión"
         onPress={onLogout}
         variant="danger"
-        icon="logout"
       />
     </View>
   );

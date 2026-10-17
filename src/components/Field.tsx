@@ -41,6 +41,7 @@ export function Field({
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
+        placeholderTextColor="#85847D"
         keyboardType={keyboardType}
         autoCapitalize={autoCapitalize}
         secureTextEntry={secureTextEntry}
@@ -51,7 +52,7 @@ export function Field({
         onBlur={() => setFocused(false)}
         textAlignVertical={multiline ? 'top' : 'center'}
         accessibilityLabel={label}
-        className={`rounded-xl border px-4 py-3 text-base text-[#161616] placeholder:text-[#85847D] bg-[#ffffff] ${
+        className={`rounded-xl border px-4 py-3 text-base text-[#161616] bg-[#ffffff] ${
           multiline ? 'min-h-[120px]' : 'min-h-[54px]'
         } ${
           inputClassName ?? 'border-[#3D3E38] bg-[#141512]'
