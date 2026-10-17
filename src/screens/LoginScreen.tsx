@@ -9,6 +9,7 @@ type LoginScreenProps = {
   username: string;
   password: string;
   errors: LoginErrors;
+  isSigningIn: boolean;
   onUsernameChange: (value: string) => void;
   onPasswordChange: (value: string) => void;
   onSignIn: () => void;
@@ -18,6 +19,7 @@ export function LoginScreen({
   username,
   password,
   errors,
+  isSigningIn,
   onUsernameChange,
   onPasswordChange,
   onSignIn,
@@ -66,9 +68,10 @@ export function LoginScreen({
           
         />
         <ActionButton
-          label="Ingresar"
+          label={isSigningIn ? 'Ingresando…' : 'Ingresar'}
           onPress={onSignIn}
-          icon="arrow"
+          icon={isSigningIn ? undefined : 'arrow'}
+          disabled={isSigningIn}
           accessibilityHint="Valida tus datos e inicia sesión"
         />
       </SurfaceCard>

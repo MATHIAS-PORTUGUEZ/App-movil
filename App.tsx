@@ -12,15 +12,21 @@ import {
 } from 'react-native-safe-area-context';
 import './global.css';
 import { BarberShopService } from './src/application/BarberShopService';
-import { InMemoryRequestRepository } from './src/infrastructure/repositories/InMemoryRequestRepository';
+import { AsyncStorageProfileRepository } from './src/infrastructure/repositories/AsyncStorageProfileRepository';
+import { AsyncStorageRequestRepository } from './src/infrastructure/repositories/AsyncStorageRequestRepository';
 import { useBarberShop } from './src/presentation/useBarberShop';
 import { HomeScreen } from './src/screens/HomeScreen';
 import { LoginScreen } from './src/screens/LoginScreen';
 import { RegisterScreen } from './src/screens/RegisterScreen';
+import { ProfileScreen } from './src/screens/ProfileScreen';
 
 export default function App() {
   const service = useMemo(
-    () => new BarberShopService(new InMemoryRequestRepository()),
+    () =>
+      new BarberShopService(
+        new AsyncStorageRequestRepository(),
+        new AsyncStorageProfileRepository(),
+      ),
     [],
   );
   const barberShop = useBarberShop(service);
@@ -47,6 +53,7 @@ export default function App() {
                 username={barberShop.username}
                 password={barberShop.password}
                 errors={barberShop.loginErrors}
+                isSigningIn={barberShop.isSigningIn}
                 onUsernameChange={barberShop.updateUsername}
                 onPasswordChange={barberShop.updatePassword}
                 onSignIn={barberShop.signIn}
@@ -54,11 +61,17 @@ export default function App() {
             ) : (
               <View className="min-h-[760px] flex-1 pb-[34px]">
                 {barberShop.screen === 'home' ? (
-                  <HomeScreen
-                    username={barberShop.username}
+                  barberShop.profile ? <HomeScreen
+                    profile={barberShop.profile}
+                    form={barberShop.form}
+                    errors={barberShop.formErrors}
+                    onChange={barberShop.updateForm}
+                    onSelectService={barberShop.selectService}
+                    onSelectBarber={barberShop.selectBarber}
+                    onSelectPromotion={barberShop.selectPromotion}
                     onRegister={barberShop.showRegister}
-                    onLogout={barberShop.signOut}
-                  />
+                    onOpenProfile={barberShop.showProfile}
+                  /> : null
                 ) : null}
 
                 {barberShop.screen === 'register' ? (
@@ -66,9 +79,24 @@ export default function App() {
                     form={barberShop.form}
                     errors={barberShop.formErrors}
                     isSubmitting={barberShop.isSubmitting}
+                    bookedTimes={barberShop.bookedTimes}
+                    cancelableTimes={barberShop.cancelableTimes}
+                    isLoadingAvailability={barberShop.isLoadingAvailability}
+                    availabilityError={barberShop.availabilityError}
+                    onRefreshAvailability={barberShop.refreshAvailability}
+                    onCancelBooking={barberShop.cancelBooking}
                     onChange={barberShop.updateForm}
                     onSubmit={barberShop.submitRequest}
                     onBack={barberShop.showHome}
+                  />
+                ) : null}
+
+                {barberShop.screen === 'profile' && barberShop.profile ? (
+                  <ProfileScreen
+                    profile={barberShop.profile}
+                    onSave={barberShop.saveProfile}
+                    onBack={barberShop.showHome}
+                    onLogout={barberShop.signOut}
                   />
                 ) : null}
               </View>

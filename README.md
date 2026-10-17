@@ -1,6 +1,6 @@
 # Bravo Barbería
 
-Aplicación móvil de ejemplo para una barbería, desarrollada con Expo, React Native y TypeScript. Incluye inicio de sesión de demostración, pantalla de inicio y formulario para registrar solicitudes de servicio.
+Aplicación móvil de ejemplo para una barbería, desarrollada con Expo, React Native y TypeScript. Incluye inicio de sesión de demostración, selección de Low Fade, Mullet, Taper o un corte personalizado; elección de Messi, Ronaldo o Neymar como barbero de demostración; promociones de ejemplo; calendario de próximos días y horarios para registrar una solicitud de cita.
 
 ## Requisitos
 
@@ -33,7 +33,7 @@ Escanea el código QR desde Expo Go en el teléfono o presiona `a` en la termina
 
 ## Validaciones
 
-La pantalla de inicio de sesión requiere usuario y contraseña no vacíos; es una demostración y no autentica contra un servidor. El formulario de solicitudes requiere nombre, teléfono válido, tipo de servicio y descripción. Las solicitudes se conservan solo en memoria mientras la aplicación está abierta.
+El primer inicio de sesión de cada nombre de usuario crea una cuenta local de demostración; los siguientes ingresos requieren su contraseña local. El perfil (nombre y foto) y las reservas se guardan en AsyncStorage; las contraseñas se guardan con SecureStore. La reserva permite elegir servicio, barbero, promoción opcional, fecha futura, horario libre, nombre, teléfono y descripción. Los nombres de barberos, promociones y horarios son de muestra. Los horarios ocupados se bloquean entre cuentas de esta instalación/dispositivo; el usuario que hizo una reserva puede tocar su horario y confirmar para cancelarla. Las reservas de fechas anteriores a hoy se eliminan automáticamente al iniciar la app, consultar/gestionar reservas y al llegar la medianoche mientras la app está abierta. No se sincronizan entre teléfonos porque no hay un servidor.
 
 ## Estructura del proyecto
 
