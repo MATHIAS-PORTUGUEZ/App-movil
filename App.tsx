@@ -34,7 +34,7 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <SafeAreaView
-        className="flex-1 bg-[#0026ff]"
+        className="flex-1 bg-[#1E2130]"
         edges={['top', 'bottom']}
       >
         <StatusBar style="light" />
@@ -79,6 +79,7 @@ export default function App() {
                     form={barberShop.form}
                     errors={barberShop.formErrors}
                     isSubmitting={barberShop.isSubmitting}
+                    isEditingBooking={Boolean(barberShop.editingRequest)}
                     bookedTimes={barberShop.bookedTimes}
                     cancelableTimes={barberShop.cancelableTimes}
                     isLoadingAvailability={barberShop.isLoadingAvailability}
@@ -87,14 +88,23 @@ export default function App() {
                     onCancelBooking={barberShop.cancelBooking}
                     onChange={barberShop.updateForm}
                     onSubmit={barberShop.submitRequest}
-                    onBack={barberShop.showHome}
+                    onBack={barberShop.backFromRegister}
                   />
                 ) : null}
 
                 {barberShop.screen === 'profile' && barberShop.profile ? (
                   <ProfileScreen
                     profile={barberShop.profile}
+                    requests={barberShop.profileRequests}
+                    isLoadingRequests={barberShop.isLoadingProfileRequests}
                     onSave={barberShop.saveProfile}
+                    onCancelBooking={(request) =>
+                      barberShop.cancelBooking(
+                        request.appointmentDate,
+                        request.appointmentTime,
+                      )
+                    }
+                    onEditBooking={barberShop.editBooking}
                     onBack={barberShop.showHome}
                     onLogout={barberShop.signOut}
                   />

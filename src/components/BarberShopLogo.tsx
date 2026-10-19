@@ -11,7 +11,7 @@ export function BarberShopLogo({
 
   return (
     <View
-      className={`self-center overflow-hidden rounded-2xl border border-[#5B4930] bg-white ${
+      className={`self-center overflow-hidden rounded-2xl border border-[#2E3450] bg-white ${
         isHero ? 'mb-5 h-[178px] w-full max-w-[280px]' : 'mb-5 h-24 w-40'
       }`}
     >

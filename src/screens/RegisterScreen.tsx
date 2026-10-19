@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Modal, Pressable, ScrollView, Text, View } from 'react-native';
 import { ActionButton } from '../components/ActionButton';
 import { Field } from '../components/Field';
 import { SurfaceCard } from '../components/SurfaceCard';
@@ -10,6 +10,7 @@ type RegisterScreenProps = {
   form: RequestForm;
   errors: RequestErrors;
   isSubmitting: boolean;
+  isEditingBooking: boolean;
   bookedTimes: string[];
   cancelableTimes: string[];
   isLoadingAvailability: boolean;
@@ -33,28 +34,36 @@ const TIME_SLOTS = [
   '18:00',
 ];
 
-const DAYS_PER_PAGE = 5;
+const LAST_BOOKING_YEAR = 2027;
 
-function getUpcomingDays(startOffset: number) {
+const MONTH_NAMES = Array.from({ length: 12 }, (_, month) =>
+  new Intl.DateTimeFormat('es', { month: 'long' }).format(
+    new Date(2027, month, 1),
+  ),
+);
+
+function getMonthDays(monthDate: Date) {
   const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const year = monthDate.getFullYear();
+  const month = monthDate.getMonth();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-  return Array.from({ length: DAYS_PER_PAGE }, (_, index) => {
-    const date = new Date(today);
-    date.setDate(today.getDate() + startOffset + index);
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
+  return Array.from({ length: daysInMonth }, (_, index) => {
+    const date = new Date(year, month, index + 1);
+    if (date < today || date.getFullYear() > LAST_BOOKING_YEAR) return null;
+    const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 
     return {
-      key: `${year}-${month}-${day}`,
+      key,
       weekday: new Intl.DateTimeFormat('es', { weekday: 'short' })
         .format(date)
         .replace('.', '')
         .toUpperCase(),
-      day,
+      day: String(date.getDate()).padStart(2, '0'),
       monthName: new Intl.DateTimeFormat('es', { month: 'long' }).format(date),
     };
-  });
+  }).filter((day): day is NonNullable<typeof day> => day !== null);
 }
 
 function formatSelectedDate(dateKey: string) {
@@ -74,27 +83,11 @@ function isPastTimeSlot(date: string, time: string) {
   return time <= currentTime;
 }
 
-function getMonthLabel(days: ReturnType<typeof getUpcomingDays>) {
-  const formatter = new Intl.DateTimeFormat('es', {
-    month: 'long',
-    year: 'numeric',
-  });
-  const firstMonth = formatter.format(new Date(`${days[0].key}T12:00:00`));
-  const lastMonth = formatter.format(
-    new Date(`${days[days.length - 1].key}T12:00:00`),
-  );
-
-  return firstMonth === lastMonth
-    ? new Intl.DateTimeFormat('es', { month: 'long' }).format(
-        new Date(`${days[0].key}T12:00:00`),
-      )
-    : `${firstMonth} - ${lastMonth}`;
-}
-
 export function RegisterScreen({
   form,
   errors,
   isSubmitting,
+  isEditingBooking,
   bookedTimes,
   cancelableTimes,
   isLoadingAvailability,
@@ -105,9 +98,41 @@ export function RegisterScreen({
   onSubmit,
   onBack,
 }: RegisterScreenProps) {
-  const [datePage, setDatePage] = useState(0);
-  const upcomingDays = getUpcomingDays(datePage * DAYS_PER_PAGE);
-  const monthLabel = getMonthLabel(upcomingDays);
+  const [visibleMonth, setVisibleMonth] = useState(() => {
+    const today = new Date();
+    if (!form.appointmentDate) return new Date(today.getFullYear(), today.getMonth(), 1);
+    const [year, month, day] = form.appointmentDate.split('-').map(Number);
+    return new Date(year, month - 1, day);
+  });
+  const [pickerMode, setPickerMode] = useState<'month' | 'year' | null>(null);
+  const today = new Date();
+  const availableMonths = MONTH_NAMES.map((name, index) => ({
+    name,
+    index,
+  })).filter(
+    ({ index }) =>
+      visibleMonth.getFullYear() > today.getFullYear() ||
+      index >= today.getMonth(),
+  );
+  const availableDays = getMonthDays(visibleMonth);
+
+  const chooseYear = (year: number) => {
+    const month =
+      year === today.getFullYear()
+        ? Math.max(visibleMonth.getMonth(), today.getMonth())
+        : visibleMonth.getMonth();
+    setVisibleMonth(new Date(year, month, 1));
+    onChange('appointmentDate', '');
+    onChange('appointmentTime', '');
+    setPickerMode(null);
+  };
+
+  const chooseMonth = (month: number) => {
+    setVisibleMonth(new Date(visibleMonth.getFullYear(), month, 1));
+    onChange('appointmentDate', '');
+    onChange('appointmentTime', '');
+    setPickerMode(null);
+  };
 
   return (
     <View className="flex-1 gap-5 py-6">
@@ -118,7 +143,9 @@ export function RegisterScreen({
         hitSlop={8}
         className="min-h-[44px] self-start justify-center rounded-lg px-3 active:opacity-70"
       >
-        <Text className="font-semibold text-white">Servicios</Text>
+        <Text className="font-semibold text-white">
+          {isEditingBooking ? 'Volver al perfil' : 'Servicios'}
+        </Text>
       </Pressable>
 
       <View>
@@ -129,74 +156,73 @@ export function RegisterScreen({
       </View>
 
       <SurfaceCard className="gap-4 p-4">
-        <View>
-          <Text className="text-lg font-bold capitalize text-white">
-            {monthLabel}
-          </Text>
+        <View className="gap-3">
           <Text className="mt-1 text-sm text-white/75">
-            Selecciona un día disponible
+            Selecciona el mes, año y día de tu cita
           </Text>
+          <View className="flex-row gap-3">
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Seleccionar mes"
+              onPress={() => setPickerMode('month')}
+              className="min-h-11 flex-1 items-center justify-center rounded-lg border border-white/50 bg-[#252A3D] px-3"
+            >
+              <Text className="font-bold capitalize text-white">
+                {MONTH_NAMES[visibleMonth.getMonth()]}
+              </Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Seleccionar año"
+              onPress={() => setPickerMode('year')}
+              className="min-h-11 flex-1 items-center justify-center rounded-lg border border-white/50 bg-[#252A3D] px-3"
+            >
+              <Text className="font-bold text-white">
+                {visibleMonth.getFullYear()}
+              </Text>
+            </Pressable>
+          </View>
         </View>
 
-        <View className="flex-row items-center gap-1">
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Ver fechas anteriores"
-            accessibilityState={{ disabled: datePage === 0 }}
-            disabled={datePage === 0}
-            onPress={() => setDatePage((page) => Math.max(0, page - 1))}
-            className={`h-10 w-7 items-center justify-center rounded-lg ${
-              datePage === 0 ? 'opacity-30' : 'bg-[#1900ff] active:opacity-70'
-            }`}
-          >
-            <Text className="text-xl font-bold text-white">‹</Text>
-          </Pressable>
-          <View
-            accessibilityLabel="Días disponibles para reservar"
-            className="flex-1 flex-row justify-center gap-1"
-          >
-            {upcomingDays.map((day) => {
-              const selected = form.appointmentDate === day.key;
-              return (
-                <Pressable
-                  key={day.key}
-                  accessibilityRole="radio"
-                  accessibilityLabel={`${day.weekday} ${day.day} de ${day.monthName}`}
-                  accessibilityState={{ selected }}
-                  onPress={() => {
-                    onChange('appointmentDate', day.key);
-                    if (form.appointmentDate !== day.key) {
-                      onChange('appointmentTime', '');
-                    }
-                  }}
-                  className={`min-h-[82px] w-[52px] items-center justify-center rounded-xl border ${
-                    selected
-                      ? 'border-white bg-[#1900ff]'
-                      : 'border-white/40 bg-[#20212a] active:bg-[#303341]'
-                  }`}
-                >
-                  <Text className="text-[10px] font-semibold text-white/75">
-                    {day.weekday}
-                  </Text>
-                  <Text className="mt-1 text-xl font-bold text-white">
-                    {day.day}
-                  </Text>
-                  <Text className="text-[9px] uppercase text-white/75">
-                    {day.monthName.slice(0, 3)}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Ver fechas siguientes"
-            onPress={() => setDatePage((page) => page + 1)}
-            className="h-10 w-7 items-center justify-center rounded-lg bg-[#1900ff] active:opacity-70"
-          >
-            <Text className="text-xl font-bold text-white">›</Text>
-          </Pressable>
-        </View>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerClassName="gap-2 pr-2"
+          accessibilityLabel="Días disponibles para reservar"
+        >
+          {availableDays.map((day) => {
+            const selected = form.appointmentDate === day.key;
+            return (
+              <Pressable
+                key={day.key}
+                accessibilityRole="radio"
+                accessibilityLabel={`${day.weekday} ${day.day} de ${day.monthName}`}
+                accessibilityState={{ selected }}
+                onPress={() => {
+                  onChange('appointmentDate', day.key);
+                  if (form.appointmentDate !== day.key) {
+                    onChange('appointmentTime', '');
+                  }
+                }}
+                className={`min-h-[82px] w-[58px] items-center justify-center rounded-xl border ${
+                  selected
+                    ? 'border-[#00BFFF] bg-[#1A2A3A]'
+                    : 'border-white/40 bg-[#30343F] active:bg-[#414653]'
+                }`}
+              >
+                <Text className="text-[10px] font-semibold text-white/75">
+                  {day.weekday}
+                </Text>
+                <Text className="mt-1 text-xl font-bold text-white">
+                  {day.day}
+                </Text>
+                <Text className="text-[9px] uppercase text-white/75">
+                  {day.monthName.slice(0, 3)}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
         {form.appointmentDate ? (
           <Text className="text-sm font-medium capitalize text-white">
             {formatSelectedDate(form.appointmentDate)}
@@ -208,6 +234,56 @@ export function RegisterScreen({
           </Text>
         ) : null}
       </SurfaceCard>
+
+      <Modal
+        visible={pickerMode !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setPickerMode(null)}
+      >
+        <View className="flex-1 justify-center bg-black/60 px-8">
+          <SurfaceCard className="max-h-[70%] gap-4 p-5">
+            <Text className="text-xl font-bold capitalize text-white">
+              Selecciona {pickerMode === 'month' ? 'un mes' : 'un año'}
+            </Text>
+            <ScrollView>
+              {pickerMode === 'month'
+                ? availableMonths.map(({ name, index }) => (
+                    <Pressable
+                      key={name}
+                      accessibilityRole="button"
+                      onPress={() => chooseMonth(index)}
+                      className="min-h-12 justify-center border-b border-white/20 px-2"
+                    >
+                      <Text className="text-base capitalize text-white">
+                        {name}
+                      </Text>
+                    </Pressable>
+                  ))
+                : Array.from(
+                    { length: Math.max(0, LAST_BOOKING_YEAR - today.getFullYear() + 1) },
+                    (_, index) => today.getFullYear() + index,
+                  ).map((year) => (
+                    <Pressable
+                      key={year}
+                      accessibilityRole="button"
+                      onPress={() => chooseYear(year)}
+                      className="min-h-12 justify-center border-b border-white/20 px-2"
+                    >
+                      <Text className="text-base text-white">{year}</Text>
+                    </Pressable>
+                  ))}
+            </ScrollView>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => setPickerMode(null)}
+              className="min-h-11 items-center justify-center rounded-lg bg-[#E05560]"
+            >
+              <Text className="font-bold text-white">Cerrar</Text>
+            </Pressable>
+          </SurfaceCard>
+        </View>
+      </Modal>
 
       <SurfaceCard className="gap-4 p-4">
         <View className="flex-row items-center justify-between">
@@ -234,7 +310,7 @@ export function RegisterScreen({
             className={`ml-2 min-h-10 flex-row items-center justify-center gap-1 rounded-lg border border-white/50 px-3 ${
               !form.appointmentDate || isLoadingAvailability
                 ? 'opacity-50'
-                : 'bg-[#1900ff] active:opacity-70'
+                : 'bg-[#00BFFF] active:opacity-70'
             }`}
           >
             <Text className="text-base font-bold text-white">↻</Text>
@@ -280,7 +356,7 @@ export function RegisterScreen({
                 accessibilityState={{ selected, disabled: unavailable }}
                 disabled={unavailable}
                 onPress={() =>
-                  isCancelable
+                  isCancelable && !isEditingBooking
                     ? onCancelBooking(form.appointmentDate, time)
                     : onChange('appointmentTime', time)
                 }
@@ -288,9 +364,9 @@ export function RegisterScreen({
                   (isBooked && !isCancelable) || (isPast && !isCancelable)
                     ? 'border-white/20 bg-[#111827]'
                     : isCancelable
-                      ? 'border-[#16a34a] bg-[#14532d] active:opacity-80'
+                      ? 'border-[#3E9B68] bg-[#216342] active:opacity-80'
                       : selected
-                    ? 'border-white bg-[#1900ff]'
+                    ? 'border-[#00BFFF] bg-[#1A2A3A]'
                     : 'border-white/40 bg-[#20212a] active:bg-[#303341]'
                 } ${unavailable ? 'opacity-50' : ''}`}
               >
@@ -381,13 +457,21 @@ export function RegisterScreen({
           label="Descripción"
           value={form.description}
           onChangeText={(value) => onChange('description', value)}
-          placeholder="Cuéntanos qué estilo buscas"
+          placeholder="¿Tienes alguna sugerencia o comentario adicional?"
           multiline
           error={errors.description}
         />
 
         <ActionButton
-          label={isSubmitting ? 'Enviando solicitud…' : 'Confirmar cita'}
+          label={
+            isSubmitting
+              ? isEditingBooking
+                ? 'Guardando cambios…'
+                : 'Enviando solicitud…'
+              : isEditingBooking
+                ? 'Guardar cambios de la cita'
+                : 'Confirmar cita'
+          }
           onPress={onSubmit}
           variant="success"
           disabled={isSubmitting}

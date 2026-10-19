@@ -57,7 +57,7 @@ function SelectionMark({ selected }: { selected: boolean }) {
   return (
     <View
       className={`h-6 w-6 items-center justify-center rounded-full border ${
-        selected ? 'border-[#1900ff] bg-[#1900ff]' : 'border-white/60'
+        selected ? 'border-[#00BFFF] bg-[#00BFFF]' : 'border-white/60'
       }`}
     >
       {selected ? <Text className="text-xs font-bold text-white">✓</Text> : null}
@@ -92,7 +92,7 @@ export function HomeScreen({
           accessibilityRole="button"
           accessibilityLabel="Abrir mi perfil"
           onPress={onOpenProfile}
-          className="h-11 w-11 items-center justify-center rounded-full border border-white/30 bg-[#1900ff] active:opacity-70"
+          className="h-11 w-11 items-center justify-center rounded-full border border-white/30 bg-[#00BFFF] active:opacity-70"
         >
           {profile.photoUri ? (
             <Image
@@ -131,8 +131,8 @@ export function HomeScreen({
               onPress={() => setActiveTab(tab)}
               className={`min-h-11 flex-1 items-center justify-center rounded-xl ${
                 selected
-                  ? 'bg-[#000000]'
-                  : 'border border-white/40 bg-[#fe0400] active:opacity-80'
+                  ? 'bg-[#00BFFF]'
+                  : 'border border-white/40 bg-[#2A2D3E] active:opacity-80'
               }`}
             >
               <Text className="font-bold text-white">{tab}</Text>
@@ -158,11 +158,11 @@ export function HomeScreen({
                   }}
                   className={`min-h-[72px] flex-row items-center rounded-xl border px-4 py-3 active:opacity-80 ${
                     selected
-                      ? 'border-[#1900ff] bg-[#17131f]'
+                      ? 'border-[#00BFFF] bg-[#1A2A3A]'
                       : 'border-white/40 bg-[#20212a]'
                   }`}
                 >
-                  <View className="mr-3 h-10 w-10 items-center justify-center rounded-full bg-[#1900ff]">
+                  <View className="mr-3 h-10 w-10 items-center justify-center rounded-full bg-[#00BFFF]">
                     <Text className="text-lg text-white">✂</Text>
                   </View>
                   <View className="flex-1">
@@ -225,11 +225,11 @@ export function HomeScreen({
                   }
                   className={`min-h-[88px] flex-row items-center rounded-xl border px-4 py-3 active:opacity-80 ${
                     selected
-                      ? 'border-[#1900ff] bg-[#17131f]'
+                      ? 'border-[#00BFFF] bg-[#1A2A3A]'
                       : 'border-white/40 bg-[#20212a]'
                   }`}
                 >
-                  <View className="mr-3 h-16 w-16 overflow-hidden rounded-full border border-white/30 bg-[#fe0400]">
+                  <View className="mr-3 h-16 w-16 overflow-hidden rounded-full border border-white/30 bg-[#2E3450]">
                     <Image
                       source={BARBER_PHOTOS[barber]}
                       accessibilityLabel={`Foto de ${barber}`}
@@ -281,11 +281,11 @@ export function HomeScreen({
                   }
                   className={`min-h-[90px] flex-row items-center rounded-xl border px-4 py-3 active:opacity-80 ${
                     selected
-                      ? 'border-[#1900ff] bg-[#17131f]'
+                      ? 'border-[#00BFFF] bg-[#1A2A3A]'
                       : 'border-white/40 bg-[#20212a]'
                   }`}
                 >
-                  <View className="mr-3 h-11 w-11 items-center justify-center rounded-full bg-[#fe0400]">
+                  <View className="mr-3 h-11 w-11 items-center justify-center rounded-full bg-[#00BFFF]">
                     <Text className="text-lg font-bold text-white">%</Text>
                   </View>
                   <View className="flex-1">

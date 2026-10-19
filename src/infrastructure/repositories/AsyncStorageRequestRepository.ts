@@ -1,6 +1,10 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { RequestRepository } from '../../domain/repositories/RequestRepository';
-import { getLocalDateKey, type SubmittedRequest } from '../../domain/models';
+import {
+  getLocalDateKey,
+  type RequestForm,
+  type SubmittedRequest,
+} from '../../domain/models';
 import { SlotAlreadyBookedError } from '../../domain/errors/SlotAlreadyBookedError';
 
 const REQUESTS_KEY = 'barber-shop.requests.v1';
@@ -90,6 +94,23 @@ export class AsyncStorageRequestRepository implements RequestRepository {
     });
   }
 
+  getUserRequests(username: string): Promise<SubmittedRequest[]> {
+    return this.runSerialized(async () => {
+      const requests = await this.readActiveRequests();
+      const normalizedUsername = username.trim().toLocaleLowerCase();
+      return requests
+        .filter(
+          (request) =>
+            request.ownerUsername?.trim().toLocaleLowerCase() === normalizedUsername,
+        )
+        .sort((left, right) =>
+          `${left.appointmentDate} ${left.appointmentTime}`.localeCompare(
+            `${right.appointmentDate} ${right.appointmentTime}`,
+          ),
+        );
+    });
+  }
+
   save(request: SubmittedRequest): Promise<void> {
     return this.runSerialized(async () => {
       const requests = await this.readActiveRequests();
@@ -107,6 +128,42 @@ export class AsyncStorageRequestRepository implements RequestRepository {
         REQUESTS_KEY,
         JSON.stringify([...requests, request]),
       );
+    });
+  }
+
+  update(
+    date: string,
+    time: string,
+    username: string,
+    request: RequestForm,
+  ): Promise<boolean> {
+    return this.runSerialized(async () => {
+      const requests = await this.readActiveRequests();
+      const normalizedUsername = username.trim().toLocaleLowerCase();
+      const requestIndex = requests.findIndex(
+        (existing) =>
+          existing.appointmentDate === date &&
+          existing.appointmentTime === time &&
+          existing.ownerUsername?.trim().toLocaleLowerCase() === normalizedUsername,
+      );
+
+      if (requestIndex === -1) return false;
+
+      const slotTaken = requests.some(
+        (existing, index) =>
+          index !== requestIndex &&
+          existing.appointmentDate === request.appointmentDate &&
+          existing.appointmentTime === request.appointmentTime,
+      );
+      if (slotTaken) throw new SlotAlreadyBookedError();
+
+      requests[requestIndex] = {
+        ...request,
+        ownerUsername: requests[requestIndex].ownerUsername,
+        submittedAt: requests[requestIndex].submittedAt,
+      };
+      await AsyncStorage.setItem(REQUESTS_KEY, JSON.stringify(requests));
+      return true;
     });
   }
 

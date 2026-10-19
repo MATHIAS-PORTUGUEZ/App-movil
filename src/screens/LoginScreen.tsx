@@ -31,17 +31,17 @@ export function LoginScreen({
         <Text className="text-center text-sm font-semibold uppercase tracking-[3px] text-[#f6f4f2]">
         Barbería
         </Text>
-        <Text className="mt-3 text-center text-3xl font-bold text-[#F4F0E7]">
+        <Text className="mt-3 text-center text-3xl font-bold text-[#00BFFF]">
           Tu estilo empieza 
         </Text>
-        <Text className="mt-2 text-center text-base text-[#ffffff]">
+        <Text className="mt-2 text-center text-base text-white/80">
           Inicia sesión para continuar
         </Text>
       </View>
 
       <SurfaceCard className="gap-5 p-6">
         <View className="mb-1">
-          <Text className="text-xl font-bold text-[#F4F0E7]">
+          <Text className="text-xl font-bold text-[#00BFFF]">
             Bienvenido
           </Text>
           <Text className="mt-1 text-sm text-[#fafaf9]">

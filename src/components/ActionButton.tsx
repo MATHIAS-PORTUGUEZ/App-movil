@@ -19,13 +19,13 @@ export function ActionButton({
   const secondary = variant === 'secondary';
   const backgroundClass =
     variant === 'success'
-      ? 'bg-[#16a34a]'
+      ? 'bg-[#00BFFF]'
       : variant === 'danger'
-        ? 'bg-[#dc2626]'
+        ? 'bg-[#E05560]'
         : secondary
-          ? 'border border-[#4A4943] bg-[#1100fe]'
-          : 'bg-[#2f00ff]';
-  const labelColorClass = primary ? 'text-[#f9f9f7]' : 'text-white';
+          ? 'border border-[#2E3450] bg-[#252A3D]'
+          : 'bg-[#00BFFF]';
+  const labelColorClass = primary ? 'text-[#1E2130]' : secondary ? 'text-white' : 'text-[#1E2130]';
 
   return (
     <Pressable

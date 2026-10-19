@@ -12,7 +12,7 @@ export function SurfaceCard({
 }: SurfaceCardProps) {
   return (
     <View
-      className={`rounded-2xl border border-[#34352E] bg-[#ff0000] p-5 ${className}`}
+      className={`rounded-2xl border border-[#2E3450] bg-[#252A3D] p-5 ${className}`}
     >
       {children}
     </View>

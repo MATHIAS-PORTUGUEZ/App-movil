@@ -5,6 +5,7 @@ import type {
   LoginErrors,
   RequestErrors,
   RequestForm,
+  SubmittedRequest,
   UserProfile,
 } from '../domain/models';
 import { validateLogin, validateRequest } from '../domain/validation';
@@ -40,6 +41,10 @@ export class BarberShopService {
 
   async getCancelableTimes(date: string, username: string): Promise<string[]> {
     return this.requestRepository.getCancelableTimes(date, username);
+  }
+
+  async getUserRequests(username: string): Promise<SubmittedRequest[]> {
+    return this.requestRepository.getUserRequests(username);
   }
 
   async cancelBooking(
@@ -85,6 +90,44 @@ export class BarberShopService {
         description: form.description.trim(),
         submittedAt: new Date().toISOString(),
       });
+    } catch (error) {
+      if (error instanceof SlotAlreadyBookedError) {
+        return {
+          valid: false,
+          errors: { appointmentTime: error.message },
+        };
+      }
+      throw error;
+    }
+
+    return { valid: true };
+  }
+
+  async updateRequest(
+    form: RequestForm,
+    ownerUsername: string,
+    originalDate: string,
+    originalTime: string,
+  ): Promise<SubmitRequestResult | { valid: false; notFound: true }> {
+    const errors = validateRequest(form);
+    if (Object.keys(errors).length > 0) {
+      return { valid: false, errors };
+    }
+
+    try {
+      const updated = await this.requestRepository.update(
+        originalDate,
+        originalTime,
+        ownerUsername,
+        {
+          ...form,
+          name: form.name.trim(),
+          phone: form.phone.trim(),
+          customService: form.customService.trim(),
+          description: form.description.trim(),
+        },
+      );
+      if (!updated) return { valid: false, notFound: true };
     } catch (error) {
       if (error instanceof SlotAlreadyBookedError) {
         return {

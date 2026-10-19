@@ -9,6 +9,7 @@ import {
   type RequestErrors,
   type RequestForm,
   type ServiceType,
+  type SubmittedRequest,
   type UserProfile,
   EMPTY_FORM,
 } from '../domain/models';
@@ -32,6 +33,9 @@ export function useBarberShop(service: BarberShopService) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSigningIn, setIsSigningIn] = useState(false);
   const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [profileRequests, setProfileRequests] = useState<SubmittedRequest[]>([]);
+  const [isLoadingProfileRequests, setIsLoadingProfileRequests] = useState(false);
+  const [editingRequest, setEditingRequest] = useState<SubmittedRequest | null>(null);
   const [bookedTimes, setBookedTimes] = useState<string[]>([]);
   const [cancelableTimes, setCancelableTimes] = useState<string[]>([]);
   const [isLoadingAvailability, setIsLoadingAvailability] = useState(false);
@@ -175,6 +179,55 @@ export function useBarberShop(service: BarberShopService) {
     }
   };
 
+  const loadProfileRequests = async (username: string) => {
+    setIsLoadingProfileRequests(true);
+    try {
+      setProfileRequests(await service.getUserRequests(username));
+    } catch (error) {
+      Alert.alert(
+        'No se pudieron cargar tus citas',
+        error instanceof Error
+          ? error.message
+          : 'Ocurrió un error al consultar tus reservas.',
+      );
+    } finally {
+      setIsLoadingProfileRequests(false);
+    }
+  };
+
+  const showProfile = () => {
+    setScreen('profile');
+    if (profile) void loadProfileRequests(profile.username);
+  };
+
+  const editBooking = (request: SubmittedRequest) => {
+    setEditingRequest(request);
+    setForm({
+      name: request.name,
+      phone: request.phone,
+      service: request.service,
+      customService: request.customService,
+      barber: request.barber,
+      promotion: request.promotion,
+      description: request.description,
+      appointmentDate: request.appointmentDate,
+      appointmentTime: request.appointmentTime,
+    });
+    setFormErrors({});
+    setScreen('register');
+    void loadAvailability(request.appointmentDate);
+  };
+
+  const backFromRegister = () => {
+    if (editingRequest) {
+      setEditingRequest(null);
+      setScreen('profile');
+      if (profile) void loadProfileRequests(profile.username);
+      return;
+    }
+    setScreen('home');
+  };
+
   const selectService = (service: ServiceType | '') => {
     setForm((current) => ({ ...current, service }));
     setFormErrors((current) => ({
@@ -279,7 +332,6 @@ export function useBarberShop(service: BarberShopService) {
       setProfile(updatedProfile);
       setForm((current) => ({ ...current, name: updatedProfile.displayName }));
       Alert.alert('Perfil actualizado', 'Se guardaron tus cambios en este dispositivo.');
-      setScreen('home');
       return true;
     } catch (error) {
       Alert.alert(
@@ -299,8 +351,25 @@ export function useBarberShop(service: BarberShopService) {
     setIsSubmitting(true);
     try {
       if (!profile) return;
-      const result = await service.submitRequest(form, profile.username);
+      const result = editingRequest
+        ? await service.updateRequest(
+            form,
+            profile.username,
+            editingRequest.appointmentDate,
+            editingRequest.appointmentTime,
+          )
+        : await service.submitRequest(form, profile.username);
       if (!result.valid) {
+        if ('notFound' in result) {
+          Alert.alert(
+            'No se encontró la cita',
+            'Vuelve al perfil para actualizar la lista de reservas.',
+          );
+          setEditingRequest(null);
+          setScreen('profile');
+          await loadProfileRequests(profile.username);
+          return;
+        }
         setFormErrors(result.errors);
         if (result.errors.appointmentTime) {
           void loadAvailability(form.appointmentDate);
@@ -316,15 +385,19 @@ export function useBarberShop(service: BarberShopService) {
         ? ` También seleccionaste: ${selectedPromotion.title} (${selectedPromotion.discount}).`
         : '';
       Alert.alert(
-        'Solicitud registrada',
-        `Gracias, ${form.name.trim()}. Solicitaste ${form.service === 'Corte personalizado' ? form.customService.trim() : form.service} con ${form.barber}, para el ${formatAppointmentDate(form.appointmentDate)} a las ${form.appointmentTime}.${promotionText}`,
+        editingRequest ? 'Cita actualizada' : 'Solicitud registrada',
+        editingRequest
+          ? `Tu cita se actualizó para el ${formatAppointmentDate(form.appointmentDate)} a las ${form.appointmentTime}.`
+          : `Gracias, ${form.name.trim()}. Solicitaste ${form.service === 'Corte personalizado' ? form.customService.trim() : form.service} con ${form.barber}, para el ${formatAppointmentDate(form.appointmentDate)} a las ${form.appointmentTime}.${promotionText}`,
       );
       availabilityRequest.current += 1;
+      setEditingRequest(null);
       setForm(EMPTY_FORM);
       setBookedTimes([]);
       setAvailabilityError('');
       setIsLoadingAvailability(false);
-      setScreen('home');
+      setScreen('profile');
+      await loadProfileRequests(profile.username);
     } catch (error) {
       const message =
         error instanceof Error
@@ -365,6 +438,9 @@ export function useBarberShop(service: BarberShopService) {
                   return;
                 }
                 await loadAvailability(date);
+                if (screen === 'profile') {
+                  await loadProfileRequests(profile.username);
+                }
                 Alert.alert('Reserva cancelada', 'El horario ya está disponible.');
               } catch (error) {
                 Alert.alert(
@@ -388,6 +464,9 @@ export function useBarberShop(service: BarberShopService) {
     username,
     password,
     profile,
+    profileRequests,
+    isLoadingProfileRequests,
+    editingRequest,
     loginErrors,
     form,
     formErrors,
@@ -405,8 +484,10 @@ export function useBarberShop(service: BarberShopService) {
     saveProfile,
     submitRequest,
     cancelBooking,
+    editBooking,
+    backFromRegister,
     showHome: () => setScreen('home'),
-    showProfile: () => setScreen('profile'),
+    showProfile,
     showRegister,
     selectService,
     selectBarber,
@@ -414,6 +495,8 @@ export function useBarberShop(service: BarberShopService) {
     signOut: () => {
       availabilityRequest.current += 1;
       setProfile(null);
+      setProfileRequests([]);
+      setEditingRequest(null);
       setPassword('');
       setForm(EMPTY_FORM);
       setFormErrors({});
