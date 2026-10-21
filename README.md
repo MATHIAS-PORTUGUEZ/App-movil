@@ -1,4 +1,4 @@
-# Bravo Barbería
+# Barbería
 
 Aplicación móvil de ejemplo para una barbería, desarrollada con Expo, React Native y TypeScript. Incluye inicio de sesión de demostración, selección de Low Fade, Mullet, Taper o un corte personalizado; elección de Messi, Ronaldo o Neymar como barbero de demostración; promociones de ejemplo; calendario de próximos días y horarios para registrar una solicitud de cita.
 
