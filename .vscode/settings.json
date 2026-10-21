@@ -2,5 +2,6 @@
   "editor.colorDecorators": true,
   "tailwindCSS.classAttributes": ["class", "className"],
   "tailwindCSS.experimental.configFile": "tailwind.config.js",
-  "tailwindCSS.colorDecorators": true
+  "tailwindCSS.colorDecorators": true,
+  "js/ts.tsdk.path": "node_modules/typescript/lib"
 }
