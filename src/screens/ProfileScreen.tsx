@@ -237,6 +237,7 @@ export function ProfileScreen({
               onChangeText={setCurrentPassword}
               placeholder="Escribe tu contraseña actual"
               secureTextEntry
+              showPasswordToggle
               autoCapitalize="none"
             />
             <Field
@@ -245,6 +246,7 @@ export function ProfileScreen({
               onChangeText={setNewPassword}
               placeholder="Escribe una nueva contraseña"
               secureTextEntry
+              showPasswordToggle
               autoCapitalize="none"
             />
             <View className="flex-row gap-3">

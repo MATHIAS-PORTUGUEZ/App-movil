@@ -63,9 +63,9 @@ export function LoginScreen({
           onChangeText={onPasswordChange}
           placeholder="Escribe tu contraseña"
           secureTextEntry
+          showPasswordToggle
           error={errors.password}
           onSubmitEditing={onSignIn}
-          
         />
         <ActionButton
           label={isSigningIn ? 'Ingresando…' : 'Ingresar'}
