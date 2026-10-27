@@ -8,7 +8,7 @@ import {
   BARBERS,
   PROMOTIONS,
   SERVICE_TYPES,
-} from '../domain/models';
+} from '../../domain/models';
 import type {
   BarberName,
   PromotionId,
@@ -16,7 +16,7 @@ import type {
   RequestForm,
   ServiceType,
   UserProfile,
-} from '../domain/models';
+} from '../../domain/models';
 
 type HomeTab = 'Servicio' | 'Barberos' | 'Promo';
 
@@ -48,9 +48,9 @@ const BARBER_DETAILS: Record<BarberName, string> = {
 };
 
 const BARBER_PHOTOS: Record<BarberName, number> = {
-  Messi: require('../../assets/barber-messi.jpg'),
-  Ronaldo: require('../../assets/barber-ronaldo.jpg'),
-  Neymar: require('../../assets/barber-neymar.jpg'),
+  Messi: require('../../../assets/barber-messi.jpg'),
+  Ronaldo: require('../../../assets/barber-ronaldo.jpg'),
+  Neymar: require('../../../assets/barber-neymar.jpg'),
 };
 
 function SelectionMark({ selected }: { selected: boolean }) {

@@ -4,7 +4,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { ActionButton } from '../components/ActionButton';
 import { Field } from '../components/Field';
 import { SurfaceCard } from '../components/SurfaceCard';
-import type { SubmittedRequest, UserProfile } from '../domain/models';
+import type { SubmittedRequest, UserProfile } from '../../domain/models';
 
 type ProfileScreenProps = {
   profile: UserProfile;

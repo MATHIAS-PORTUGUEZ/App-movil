@@ -3,7 +3,7 @@ import { ActionButton } from '../components/ActionButton';
 import { BarberShopLogo } from '../components/BarberShopLogo';
 import { Field } from '../components/Field';
 import { SurfaceCard } from '../components/SurfaceCard';
-import type { LoginErrors } from '../domain/models';
+import type { LoginErrors } from '../../domain/models';
 
 type LoginScreenProps = {
   username: string;
@@ -13,6 +13,7 @@ type LoginScreenProps = {
   onUsernameChange: (value: string) => void;
   onPasswordChange: (value: string) => void;
   onSignIn: () => void;
+  onCreateAccount: () => void;
 };
 
 export function LoginScreen({
@@ -23,6 +24,7 @@ export function LoginScreen({
   onUsernameChange,
   onPasswordChange,
   onSignIn,
+  onCreateAccount,
 }: LoginScreenProps) {
   return (
     <View className="flex-1 justify-center py-10">
@@ -73,6 +75,18 @@ export function LoginScreen({
           disabled={isSigningIn}
           accessibilityHint="Valida tus datos e inicia sesión"
         />
+
+        <View className="pt-1">
+          <Text className="mb-2 text-center text-sm text-[#f6f4f2]/80">
+            ¿No tienes una cuenta?
+          </Text>
+          <ActionButton
+            label="Crear cuenta"
+            onPress={onCreateAccount}
+            variant="secondary"
+            accessibilityHint="Abre el formulario para registrar un nuevo cliente"
+          />
+        </View>
       </SurfaceCard>
       <Text className="mt-6 text-center text-xs text-[#ffffff]">
         Atención personalizada · Estilo a tu medida

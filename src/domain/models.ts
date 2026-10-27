@@ -33,7 +33,17 @@ export type UserProfile = {
   photoUri: string | null;
 };
 
+export type CreateAccountForm = {
+  username: string;
+  password: string;
+};
+
 export type LoginErrors = {
+  username?: string;
+  password?: string;
+};
+
+export type CreateAccountErrors = {
   username?: string;
   password?: string;
 };

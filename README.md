@@ -33,18 +33,18 @@ Escanea el código QR desde Expo Go en el teléfono o presiona `a` en la termina
 
 ## Validaciones
 
-El primer inicio de sesión de cada nombre de usuario crea una cuenta local de demostración; los siguientes ingresos requieren su contraseña local. El perfil (nombre y foto) y las reservas se guardan en AsyncStorage; las contraseñas se guardan con SecureStore. La reserva permite elegir servicio, barbero, promoción opcional, fecha futura, horario libre, nombre, teléfono y descripción. Los nombres de barberos, promociones y horarios son de muestra. Los horarios ocupados se bloquean entre cuentas de esta instalación/dispositivo; el usuario que hizo una reserva puede tocar su horario y confirmar para cancelarla. El botón «Actualizar» vuelve a consultar los horarios y elimina las reservas con fecha anterior a hoy; las reservas de hoy y las futuras siguen ocupando su hora. Las vencidas también se eliminan al iniciar la app y a medianoche mientras está abierta. No se sincronizan entre teléfonos porque no hay un servidor.
+Los clientes crean una cuenta local desde «Crear cuenta» con usuario y contraseña; el inicio de sesión solo autentica cuentas existentes. El usuario también se usa como nombre inicial del perfil y puede cambiarse después. El perfil (nombre y foto) y las reservas se guardan en AsyncStorage; las contraseñas se guardan con SecureStore. La reserva permite elegir servicio, barbero, promoción opcional, fecha futura, horario libre, nombre, teléfono y descripción. Los nombres de barberos, promociones y horarios son de muestra. Los horarios ocupados se bloquean entre cuentas de esta instalación/dispositivo; el usuario que hizo una reserva puede tocar su horario y confirmar para cancelarla. El botón «Actualizar» vuelve a consultar los horarios y elimina las reservas con fecha anterior a hoy; las reservas de hoy y las futuras siguen ocupando su hora. Las vencidas también se eliminan al iniciar la app y a medianoche mientras está abierta. No se sincronizan entre teléfonos porque no hay un servidor.
 
 ## Estructura del proyecto
 
 ```text
 src/
   application/       Servicio de aplicación
-  components/        Componentes reutilizables con Props y TypeScript
   domain/            Modelos, validaciones y contratos
   infrastructure/    Implementaciones de repositorios
-  presentation/      Estado y acciones de interfaz mediante hooks
-  screens/           Pantallas de Login, Home y Registro
+  presentation/      Pantallas, componentes y estado de la interfaz
+    components/      Componentes reutilizables con Props y TypeScript
+    screens/         Pantallas de Login, Crear cuenta, Home, Registro y Perfil
 ```
 
 Los estilos de interfaz se implementan con NativeWind.

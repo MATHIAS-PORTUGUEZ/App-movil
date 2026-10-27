@@ -1,4 +1,5 @@
 import type {
+  CreateAccountErrors,
   LoginErrors,
   RequestErrors,
   RequestForm,
@@ -13,6 +14,18 @@ export function validateLogin(
   if (!username.trim()) errors.username = 'Escribe tu usuario.';
   if (!password.trim()) errors.password = 'Escribe tu contraseña.';
   if (password.trim() && password.length < 6) {
+    errors.password = 'La contraseña debe tener al menos 6 caracteres.';
+  }
+  return errors;
+}
+
+export function validateCreateAccount(
+  username: string,
+  password: string,
+): CreateAccountErrors {
+  const errors: CreateAccountErrors = {};
+  if (!username.trim()) errors.username = 'Escribe un nombre de usuario.';
+  if (password.trim().length < 6) {
     errors.password = 'La contraseña debe tener al menos 6 caracteres.';
   }
   return errors;

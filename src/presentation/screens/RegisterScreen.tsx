@@ -3,8 +3,8 @@ import { Modal, Pressable, ScrollView, Text, View } from 'react-native';
 import { ActionButton } from '../components/ActionButton';
 import { Field } from '../components/Field';
 import { SurfaceCard } from '../components/SurfaceCard';
-import { getLocalDateKey, PROMOTIONS } from '../domain/models';
-import type { RequestErrors, RequestForm } from '../domain/models';
+import { getLocalDateKey, PROMOTIONS } from '../../domain/models';
+import type { RequestErrors, RequestForm } from '../../domain/models';
 
 type RegisterScreenProps = {
   form: RequestForm;

@@ -4,6 +4,8 @@ import { BarberShopService } from '../application/BarberShopService';
 import {
   PROMOTIONS,
   type BarberName,
+  type CreateAccountErrors,
+  type CreateAccountForm,
   type LoginErrors,
   type PromotionId,
   type RequestErrors,
@@ -14,7 +16,7 @@ import {
   EMPTY_FORM,
 } from '../domain/models';
 
-type Screen = 'login' | 'home' | 'register' | 'profile';
+type Screen = 'login' | 'createAccount' | 'home' | 'register' | 'profile';
 
 function formatAppointmentDate(dateKey: string) {
   const [year, month, day] = dateKey.split('-').map(Number);
@@ -28,6 +30,13 @@ export function useBarberShop(service: BarberShopService) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loginErrors, setLoginErrors] = useState<LoginErrors>({});
+  const [createAccountForm, setCreateAccountForm] = useState<CreateAccountForm>({
+    username: '',
+    password: '',
+  });
+  const [createAccountErrors, setCreateAccountErrors] =
+    useState<CreateAccountErrors>({});
+  const [isCreatingAccount, setIsCreatingAccount] = useState(false);
   const [form, setForm] = useState<RequestForm>(EMPTY_FORM);
   const [formErrors, setFormErrors] = useState<RequestErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -161,6 +170,59 @@ export function useBarberShop(service: BarberShopService) {
     setScreen('register');
   };
 
+  const showCreateAccount = () => {
+    setCreateAccountForm({ username: '', password: '' });
+    setCreateAccountErrors({});
+    setScreen('createAccount');
+  };
+
+  const updateCreateAccountForm = (
+    field: keyof CreateAccountForm,
+    value: string,
+  ) => {
+    setCreateAccountForm((current) => ({ ...current, [field]: value }));
+    setCreateAccountErrors((current) => ({ ...current, [field]: undefined }));
+  };
+
+  const createAccount = async () => {
+    setIsCreatingAccount(true);
+    try {
+      const result = await service.createAccount(
+        createAccountForm.username,
+        createAccountForm.password,
+      );
+      if (!result.valid) {
+        setCreateAccountErrors(result.errors);
+        return;
+      }
+
+      setProfile(result.profile);
+      setUsername(result.profile.username);
+      setPassword('');
+      setForm((current) => ({
+        ...current,
+        name: result.profile.displayName,
+      }));
+      setCreateAccountForm({ username: '', password: '' });
+      setScreen('home');
+    } catch (error) {
+      Alert.alert(
+        'No se pudo crear la cuenta',
+        error instanceof Error
+          ? error.message
+          : 'Ocurrió un error inesperado.',
+      );
+    } finally {
+      setIsCreatingAccount(false);
+    }
+  };
+
+  const backToLogin = () => {
+    setCreateAccountForm({ username: '', password: '' });
+    setCreateAccountErrors({});
+    setScreen('login');
+  };
+
   const refreshAvailability = async () => {
     if (!form.appointmentDate || isLoadingAvailability) return;
 
@@ -257,7 +319,7 @@ export function useBarberShop(service: BarberShopService) {
       const authenticatedProfile = await service.signIn(username, password);
       if (!authenticatedProfile) {
         setLoginErrors({
-          password: 'La contraseña no coincide con esta cuenta local.',
+          password: 'Usuario o contraseña incorrectos. Si aún no tienes cuenta, créala aquí.',
         });
         return;
       }
@@ -468,6 +530,9 @@ export function useBarberShop(service: BarberShopService) {
     isLoadingProfileRequests,
     editingRequest,
     loginErrors,
+    createAccountForm,
+    createAccountErrors,
+    isCreatingAccount,
     form,
     formErrors,
     isSubmitting,
@@ -481,6 +546,10 @@ export function useBarberShop(service: BarberShopService) {
     updatePassword,
     updateForm,
     signIn,
+    createAccount,
+    showCreateAccount,
+    updateCreateAccountForm,
+    backToLogin,
     saveProfile,
     submitRequest,
     cancelBooking,

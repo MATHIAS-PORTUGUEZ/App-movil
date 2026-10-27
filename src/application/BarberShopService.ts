@@ -2,17 +2,26 @@ import type { RequestRepository } from '../domain/repositories/RequestRepository
 import type { ProfileRepository } from '../domain/repositories/ProfileRepository';
 import { SlotAlreadyBookedError } from '../domain/errors/SlotAlreadyBookedError';
 import type {
+  CreateAccountErrors,
   LoginErrors,
   RequestErrors,
   RequestForm,
   SubmittedRequest,
   UserProfile,
 } from '../domain/models';
-import { validateLogin, validateRequest } from '../domain/validation';
+import {
+  validateCreateAccount,
+  validateLogin,
+  validateRequest,
+} from '../domain/validation';
 
 export type SubmitRequestResult =
   | { valid: true }
   | { valid: false; errors: RequestErrors };
+
+export type CreateAccountResult =
+  | { valid: true; profile: UserProfile }
+  | { valid: false; errors: CreateAccountErrors };
 
 export class BarberShopService {
   constructor(
@@ -29,6 +38,29 @@ export class BarberShopService {
     password: string,
   ): Promise<UserProfile | null> {
     return this.profileRepository.signIn(username, password);
+  }
+
+  async createAccount(
+    username: string,
+    password: string,
+  ): Promise<CreateAccountResult> {
+    const errors = validateCreateAccount(username, password);
+    if (Object.keys(errors).length > 0) {
+      return { valid: false, errors };
+    }
+
+    const profile = await this.profileRepository.createAccount(
+      username.trim(),
+      password,
+    );
+    if (!profile) {
+      return {
+        valid: false,
+        errors: { username: 'Ese nombre de usuario ya está registrado.' },
+      };
+    }
+
+    return { valid: true, profile };
   }
 
   async pruneExpiredRequests(): Promise<void> {

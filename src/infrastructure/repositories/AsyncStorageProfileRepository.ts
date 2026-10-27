@@ -51,33 +51,57 @@ export class AsyncStorageProfileRepository implements ProfileRepository {
       (profile) => normalizeUsername(profile.username) === normalizedUsername,
     );
 
-    if (
-      savedPassword !== null &&
-      savedPassword !== password
-    ) {
-      return null;
-    }
+    if (!existingProfile) return null;
+    if (savedPassword !== null && savedPassword !== password) return null;
     if (savedPassword === null && existingProfile) {
       throw new Error(
-        'No se pudo verificar esta cuenta local. Crea otra cuenta en este dispositivo.',
+        'No se pudo verificar esta cuenta local. Contacta al soporte de la barbería.',
       );
     }
-    const profile =
-      existingProfile ?? {
-        username: username.trim(),
-        displayName: username.trim(),
-        photoUri: null,
-      };
 
-    if (savedPassword === null) {
-      await SecureStore.setItemAsync(credentialKey(normalizedUsername), password);
-    }
+    return existingProfile;
+  }
 
-    if (!existingProfile) {
+  async createAccount(
+    username: string,
+    password: string,
+  ): Promise<UserProfile | null> {
+    const normalizedUsername = normalizeUsername(username);
+    const profiles = parseProfiles(
+      await AsyncStorage.getItem(PROFILES_KEY),
+    );
+    const key = credentialKey(normalizedUsername);
+    const existingProfile = profiles.some(
+      (profile) => normalizeUsername(profile.username) === normalizedUsername,
+    );
+    const existingCredential = await SecureStore.getItemAsync(key);
+    if (existingProfile || existingCredential !== null) return null;
+
+    const profile: UserProfile = {
+      username: username.trim(),
+      displayName: username.trim(),
+      photoUri: null,
+    };
+
+    await SecureStore.setItemAsync(key, password);
+    try {
       await AsyncStorage.setItem(
         PROFILES_KEY,
         JSON.stringify([...profiles, profile]),
       );
+    } catch (error) {
+      try {
+        await SecureStore.deleteItemAsync(key);
+      } catch (cleanupError) {
+        throw new Error(
+          `No se pudo guardar el perfil y tampoco limpiar la credencial: ${
+            cleanupError instanceof Error
+              ? cleanupError.message
+              : 'error desconocido'
+          }`,
+        );
+      }
+      throw error;
     }
 
     return profile;

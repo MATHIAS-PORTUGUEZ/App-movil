@@ -18,7 +18,7 @@ export function BarberShopLogo({
     
     
       <Image
-        source={require('../../assets/istockphoto-1446474893-612x612.jpg')}
+        source={require('../../../assets/istockphoto-1446474893-612x612.jpg')}
         accessibilityLabel="Logo de la barbería"
         resizeMode="cover"
         style={{ width: '100%', height: '100%' }}
