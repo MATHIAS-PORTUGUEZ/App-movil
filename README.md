@@ -47,4 +47,4 @@ src/
     screens/         Pantallas de Login, Crear cuenta, Home, Registro y Perfil
 ```
 
-Los estilos de interfaz se implementan con NativeWind.
+Los estilos de interfaz se implementan con NativeWind...
