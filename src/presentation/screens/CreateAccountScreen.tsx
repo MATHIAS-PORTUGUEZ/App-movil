@@ -26,53 +26,73 @@ export function CreateAccountScreen({
   onBackToLogin,
 }: CreateAccountScreenProps) {
   return (
-    <View className="flex-1 justify-center py-10">
-      <View className="mb-8 items-center">
+    <View className="flex-1 justify-center py-8">
+      <View className="mb-7 items-center">
         <BarberShopLogo />
-        <Text className="text-center text-sm font-semibold uppercase tracking-[3px] text-[#f6f4f2]">
+        <Text className="text-center text-xs font-bold uppercase tracking-[3px] text-white/70">
           Barbería
         </Text>
         <Text className="mt-3 text-center text-3xl font-bold text-[#00BFFF]">
-          Crear cuenta
+          Crea tu cuenta
         </Text>
-        <Text className="mt-2 text-center text-base text-white/80">
-          Elige un usuario y una contraseña para comenzar.
+        <Text className="mt-2 max-w-[300px] text-center text-base leading-6 text-white/80">
+          Regístrate para reservar tus próximas visitas.
         </Text>
       </View>
 
       <SurfaceCard className="gap-5 p-6">
+        <View className="gap-1">
+          <Text className="text-xl font-bold text-white">Tus datos de acceso</Text>
+          <Text className="text-sm leading-5 text-white/70">
+            Elige un nombre de usuario y crea una contraseña.
+          </Text>
+        </View>
+
         <Field
-          label="Usuario"
+          label="Nombre de usuario"
           value={form.username}
           onChangeText={(value) => onChange('username', value)}
-          placeholder="Elige un nombre de usuario"
+          placeholder="Por ejemplo, mateo23"
           autoCapitalize="none"
           error={errors.username}
           returnKeyType="next"
         />
-        <Field
-          label="Contraseña"
-          value={form.password}
-          onChangeText={(value) => onChange('password', value)}
-          placeholder="Crea una contraseña (mínimo 6 caracteres)"
-          secureTextEntry
-          showPasswordToggle
-          error={errors.password}
-          onSubmitEditing={onCreateAccount}
-        />
-        <ActionButton
-          label={isCreatingAccount ? 'Creando cuenta…' : 'Crear cuenta'}
-          onPress={onCreateAccount}
-          disabled={isCreatingAccount}
-          accessibilityHint="Guarda tus datos y crea una cuenta nueva"
-        />
-        <ActionButton
-          label="Volver a iniciar sesión"
-          onPress={onBackToLogin}
-          variant="secondary"
-          disabled={isCreatingAccount}
-        />
+        <View className="gap-2">
+          <Field
+            label="Contraseña"
+            value={form.password}
+            onChangeText={(value) => onChange('password', value)}
+            placeholder="Crea una contraseña"
+            autoCapitalize="none"
+            secureTextEntry
+            showPasswordToggle
+            error={errors.password}
+            onSubmitEditing={onCreateAccount}
+          />
+          <Text className="text-xs leading-5 text-white/65">
+            Usa al menos 6 caracteres. Toca el ojo para mostrar u ocultar la contraseña.
+          </Text>
+        </View>
+
+        <View className="gap-3 pt-1">
+          <ActionButton
+            label={isCreatingAccount ? 'Creando cuenta…' : 'Crear mi cuenta'}
+            onPress={onCreateAccount}
+            disabled={isCreatingAccount}
+            accessibilityHint="Guarda tus datos y crea una cuenta nueva"
+          />
+          <ActionButton
+            label="Ya tengo una cuenta · Iniciar sesión"
+            onPress={onBackToLogin}
+            variant="secondary"
+            disabled={isCreatingAccount}
+          />
+        </View>
       </SurfaceCard>
+
+      <Text className="mt-5 text-center text-xs leading-5 text-white/60">
+        Tu cuenta se guarda en este dispositivo.
+      </Text>
     </View>
   );
 }

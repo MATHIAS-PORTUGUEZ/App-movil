@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
 export type FieldProps = {
   label: string;
@@ -68,22 +69,16 @@ export function Field({
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={visible ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+            accessibilityHint={visible ? 'Oculta el texto de la contraseña' : 'Muestra el texto de la contraseña'}
+            accessibilityState={{ selected: visible }}
             onPress={() => setVisible((v) => !v)}
             style={styles.eyeButton}
           >
-            {/* Ojo abierto */}
-            {visible ? (
-              <View style={styles.eyeOpen}>
-                <View style={styles.iris}>
-                  <View style={styles.pupil} />
-                </View>
-              </View>
-            ) : (
-              /* Ojo cerrado */
-              <View style={styles.eyeOpen}>
-                <View style={styles.eyeClosedLine} />
-              </View>
-            )}
+            <Ionicons
+              name={visible ? 'eye-outline' : 'eye-off-outline'}
+              size={25}
+              color="#F6F4F2"
+            />
           </Pressable>
         ) : null}
       </View>
@@ -127,38 +122,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     width: 32,
-  },
-  // Contorno del ojo — forma oval
-  eyeOpen: {
-    width: 26,
-    height: 16,
-    borderRadius: 8,
-    borderWidth: 2,
-    borderColor: '#00BFFF',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  // Iris
-  iris: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: '#00BFFF',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  // Pupila
-  pupil: {
-    width: 4,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: '#1E2130',
-  },
-  // Línea horizontal para ojo cerrado
-  eyeClosedLine: {
-    width: 14,
-    height: 2,
-    borderRadius: 1,
-    backgroundColor: '#00BFFF',
   },
 });
