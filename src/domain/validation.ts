@@ -7,11 +7,15 @@ import type {
 import { getLocalDateKey } from './models';
 
 export function validateLogin(
-  username: string,
+  email: string,
   password: string,
 ): LoginErrors {
   const errors: LoginErrors = {};
-  if (!username.trim()) errors.username = 'Escribe tu usuario.';
+  if (!email.trim()) {
+    errors.email = 'Escribe tu correo electrónico.';
+  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+    errors.email = 'Escribe un correo electrónico válido.';
+  }
   if (!password.trim()) errors.password = 'Escribe tu contraseña.';
   if (password.trim() && password.length < 6) {
     errors.password = 'La contraseña debe tener al menos 6 caracteres.';
@@ -20,11 +24,15 @@ export function validateLogin(
 }
 
 export function validateCreateAccount(
-  username: string,
+  email: string,
   password: string,
 ): CreateAccountErrors {
   const errors: CreateAccountErrors = {};
-  if (!username.trim()) errors.username = 'Escribe un nombre de usuario.';
+  if (!email.trim()) {
+    errors.email = 'Escribe tu correo electrónico.';
+  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+    errors.email = 'Escribe un correo electrónico válido.';
+  }
   if (password.trim().length < 6) {
     errors.password = 'La contraseña debe tener al menos 6 caracteres.';
   }
@@ -33,7 +41,9 @@ export function validateCreateAccount(
 
 export function validateRequest(form: RequestForm): RequestErrors {
   const errors: RequestErrors = {};
-  if (!form.name.trim()) errors.name = 'El nombre es obligatorio.';
+  if (!form.name.trim()) errors.name = 'Escribe el nombre de quien asistirá.';
+  else if (form.name.trim().length < 2) errors.name = 'El nombre debe tener al menos 2 caracteres.';
+  else if (form.name.trim().length > 60) errors.name = 'El nombre no puede superar 60 caracteres.';
 
   if (!form.phone.trim()) {
     errors.phone = 'El teléfono es obligatorio.';
@@ -49,9 +59,6 @@ export function validateRequest(form: RequestForm): RequestErrors {
     errors.customService = 'Describe el corte que tienes en mente.';
   }
   if (!form.barber) errors.barber = 'Selecciona un barbero.';
-  if (!form.description.trim()) {
-    errors.description = 'Cuéntanos qué servicio necesitas.';
-  }
   if (!form.appointmentDate) {
     errors.appointmentDate = 'Selecciona el día de tu cita.';
   } else if (form.appointmentDate < getLocalDateKey()) {

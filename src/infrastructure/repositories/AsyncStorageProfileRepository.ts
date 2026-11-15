@@ -1,17 +1,23 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as SecureStore from 'expo-secure-store';
+import {
+  EmailAuthProvider,
+  createUserWithEmailAndPassword,
+  onAuthStateChanged,
+  reauthenticateWithCredential,
+  signInWithEmailAndPassword,
+  signOut as firebaseSignOut,
+  updatePassword,
+  updateProfile,
+  type User,
+} from 'firebase/auth';
 import type { ProfileRepository } from '../../domain/repositories/ProfileRepository';
 import type { UserProfile } from '../../domain/models';
+import { getFirebaseAuth } from '../firebase';
 
 const PROFILES_KEY = 'barber-shop.profiles.v1';
-const CREDENTIALS_KEY_PREFIX = 'barber-shop.credentials.v1.';
 
-function normalizeUsername(username: string) {
-  return username.trim().toLocaleLowerCase();
-}
-
-function credentialKey(username: string) {
-  return `${CREDENTIALS_KEY_PREFIX}${encodeURIComponent(normalizeUsername(username))}`;
+function normalizeEmail(email: string) {
+  return email.trim().toLocaleLowerCase();
 }
 
 function isUserProfile(value: unknown): value is UserProfile {
@@ -36,106 +42,113 @@ function parseProfiles(value: string | null): UserProfile[] {
 }
 
 export class AsyncStorageProfileRepository implements ProfileRepository {
-  async signIn(
-    username: string,
-    password: string,
-  ): Promise<UserProfile | null> {
-    const normalizedUsername = normalizeUsername(username);
-    const profiles = parseProfiles(
-      await AsyncStorage.getItem(PROFILES_KEY),
+  async signIn(email: string, password: string): Promise<UserProfile | null> {
+    const credential = await signInWithEmailAndPassword(
+      getFirebaseAuth(),
+      normalizeEmail(email),
+      password,
     );
-    const savedPassword = await SecureStore.getItemAsync(
-      credentialKey(normalizedUsername),
-    );
-    const existingProfile = profiles.find(
-      (profile) => normalizeUsername(profile.username) === normalizedUsername,
-    );
-
-    if (!existingProfile) return null;
-    if (savedPassword !== null && savedPassword !== password) return null;
-    if (savedPassword === null && existingProfile) {
-      throw new Error(
-        'No se pudo verificar esta cuenta local. Contacta al soporte de la barbería.',
-      );
-    }
-
-    return existingProfile;
+    return this.profileForUser(credential.user);
   }
 
   async createAccount(
-    username: string,
+    email: string,
     password: string,
   ): Promise<UserProfile | null> {
-    const normalizedUsername = normalizeUsername(username);
-    const profiles = parseProfiles(
-      await AsyncStorage.getItem(PROFILES_KEY),
+    const credential = await createUserWithEmailAndPassword(
+      getFirebaseAuth(),
+      normalizeEmail(email),
+      password,
     );
-    const key = credentialKey(normalizedUsername);
-    const existingProfile = profiles.some(
-      (profile) => normalizeUsername(profile.username) === normalizedUsername,
-    );
-    const existingCredential = await SecureStore.getItemAsync(key);
-    if (existingProfile || existingCredential !== null) return null;
-
-    const profile: UserProfile = {
-      username: username.trim(),
-      displayName: username.trim(),
-      photoUri: null,
-    };
-
-    await SecureStore.setItemAsync(key, password);
-    try {
-      await AsyncStorage.setItem(
-        PROFILES_KEY,
-        JSON.stringify([...profiles, profile]),
-      );
-    } catch (error) {
-      try {
-        await SecureStore.deleteItemAsync(key);
-      } catch (cleanupError) {
-        throw new Error(
-          `No se pudo guardar el perfil y tampoco limpiar la credencial: ${
-            cleanupError instanceof Error
-              ? cleanupError.message
-              : 'error desconocido'
-          }`,
-        );
-      }
-      throw error;
-    }
-
+    const profile = await this.profileForUser(credential.user);
+    await this.saveProfile(profile);
     return profile;
   }
 
+  async signOut(): Promise<void> {
+    await firebaseSignOut(getFirebaseAuth());
+  }
+
+  observeAuthState(listener: (profile: UserProfile | null) => void) {
+    return onAuthStateChanged(getFirebaseAuth(), (user) => {
+      if (!user) {
+        listener(null);
+        return;
+      }
+
+      void this.profileForUser(user)
+        .then(listener)
+        .catch(() => listener(null));
+    });
+  }
+
   async saveProfile(profile: UserProfile): Promise<void> {
-    const profiles = parseProfiles(
-      await AsyncStorage.getItem(PROFILES_KEY),
-    );
-    const normalizedUsername = normalizeUsername(profile.username);
+    const profiles = parseProfiles(await AsyncStorage.getItem(PROFILES_KEY));
+    const normalizedEmail = normalizeEmail(profile.username);
     const updatedProfiles = profiles.some(
-      (item) => normalizeUsername(item.username) === normalizedUsername,
+      (item) => normalizeEmail(item.username) === normalizedEmail,
     )
       ? profiles.map((item) =>
-          normalizeUsername(item.username) === normalizedUsername
-            ? profile
-            : item,
+          normalizeEmail(item.username) === normalizedEmail ? profile : item,
         )
       : [...profiles, profile];
 
     await AsyncStorage.setItem(PROFILES_KEY, JSON.stringify(updatedProfiles));
+
+    const user = getFirebaseAuth().currentUser;
+    if (user && normalizeEmail(user.email ?? '') === normalizedEmail) {
+      await updateProfile(user, { displayName: profile.displayName });
+    }
   }
 
   async changePassword(
-    username: string,
+    email: string,
     currentPassword: string,
     newPassword: string,
   ): Promise<boolean> {
-    const normalizedUsername = normalizeUsername(username);
-    const key = credentialKey(normalizedUsername);
-    const savedPassword = await SecureStore.getItemAsync(key);
-    if (savedPassword !== currentPassword) return false;
+    const user = getFirebaseAuth().currentUser;
+    if (!user?.email || normalizeEmail(user.email) !== normalizeEmail(email)) {
+      return false;
+    }
 
-    await SecureStore.setItemAsync(key, newPassword);
-    return true;
+    try {
+      const credential = EmailAuthProvider.credential(
+        user.email,
+        currentPassword,
+      );
+      await reauthenticateWithCredential(user, credential);
+      await updatePassword(user, newPassword);
+      return true;
+    } catch (error) {
+      if (
+        typeof error === 'object' &&
+        error !== null &&
+        'code' in error &&
+        (error.code === 'auth/invalid-credential' ||
+          error.code === 'auth/wrong-password' ||
+          error.code === 'auth/user-mismatch')
+      ) {
+        return false;
+      }
+      throw error;
+    }
+  }
+
+  private async profileForUser(user: User): Promise<UserProfile> {
+    const email = user.email ?? '';
+    const normalizedEmail = normalizeEmail(email);
+    const profiles = parseProfiles(await AsyncStorage.getItem(PROFILES_KEY));
+    const existingProfile = profiles.find(
+      (profile) => normalizeEmail(profile.username) === normalizedEmail,
+    );
+    if (existingProfile) return { ...existingProfile, uid: user.uid };
+
+    return {
+      username: normalizedEmail,
+      displayName:
+        user.displayName?.trim() || normalizedEmail.split('@')[0] || 'Cliente',
+      photoUri: user.photoURL,
+      uid: user.uid,
+    };
   }
 }

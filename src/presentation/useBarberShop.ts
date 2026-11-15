@@ -1,8 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { Alert, Keyboard } from 'react-native';
 import { BarberShopService } from '../application/BarberShopService';
+import { getAuthErrorMessage } from '../application/authErrors';
+import { CATALOG_ADMIN_UID } from '../domain/catalogAdmin';
+import type { CatalogItem } from '../domain/models';
+import { DEFAULT_CATALOG, type CatalogKind, FirestoreCatalogRepository } from '../infrastructure/repositories/FirestoreCatalogRepository';
 import {
-  PROMOTIONS,
   type BarberName,
   type CreateAccountErrors,
   type CreateAccountForm,
@@ -16,7 +19,7 @@ import {
   EMPTY_FORM,
 } from '../domain/models';
 
-type Screen = 'login' | 'createAccount' | 'home' | 'register' | 'profile';
+type Screen = 'login' | 'createAccount' | 'home' | 'register' | 'profile' | 'business';
 
 function formatAppointmentDate(dateKey: string) {
   const [year, month, day] = dateKey.split('-').map(Number);
@@ -25,13 +28,13 @@ function formatAppointmentDate(dateKey: string) {
   }).format(new Date(year, month - 1, day));
 }
 
-export function useBarberShop(service: BarberShopService) {
+export function useBarberShop(service: BarberShopService, catalogRepository: FirestoreCatalogRepository) {
   const [screen, setScreen] = useState<Screen>('login');
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loginErrors, setLoginErrors] = useState<LoginErrors>({});
   const [createAccountForm, setCreateAccountForm] = useState<CreateAccountForm>({
-    username: '',
+    email: '',
     password: '',
   });
   const [createAccountErrors, setCreateAccountErrors] =
@@ -41,7 +44,9 @@ export function useBarberShop(service: BarberShopService) {
   const [formErrors, setFormErrors] = useState<RequestErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSigningIn, setIsSigningIn] = useState(false);
+  const [isRestoringAuth, setIsRestoringAuth] = useState(true);
   const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [catalogs, setCatalogs] = useState<Record<CatalogKind, CatalogItem[]>>(DEFAULT_CATALOG);
   const [profileRequests, setProfileRequests] = useState<SubmittedRequest[]>([]);
   const [isLoadingProfileRequests, setIsLoadingProfileRequests] = useState(false);
   const [editingRequest, setEditingRequest] = useState<SubmittedRequest | null>(null);
@@ -54,8 +59,62 @@ export function useBarberShop(service: BarberShopService) {
   const availabilityRequest = useRef(0);
 
   useEffect(() => {
+    if (!profile) return;
+    let active = true;
+    const kinds: CatalogKind[] = ['services', 'barbers', 'promotions'];
+    void Promise.all(kinds.map(async (kind) => [kind, await catalogRepository.getCached(kind)] as const))
+      .then((cached) => {
+        if (!active) return;
+        setCatalogs((current) => {
+          const next = { ...current };
+          for (const [kind, items] of cached) {
+            if (items.length > 0) next[kind] = items;
+          }
+          return next;
+        });
+      })
+      .catch(() => undefined);
+    const stops = (['services', 'barbers', 'promotions'] as CatalogKind[]).map((kind) =>
+      catalogRepository.subscribe(
+        kind,
+        (items, fromCache) => {
+          if (!fromCache || items.length > 0) {
+            setCatalogs((current) => ({ ...current, [kind]: items }));
+          }
+        },
+        (error) => Alert.alert('No se pudo cargar el catálogo', error.message),
+      ),
+    );
+    return () => {
+      active = false;
+      stops.forEach((stop) => stop());
+    };
+  }, [profile?.uid, catalogRepository]);
+
+  useEffect(() => {
     Keyboard.dismiss();
   }, [screen]);
+
+  useEffect(() => {
+    try {
+      return service.observeAuthState((restoredProfile) => {
+        if (restoredProfile) {
+          setProfile(restoredProfile);
+          setEmail(restoredProfile.username);
+          setForm((current) => ({
+            ...current,
+            name: restoredProfile.displayName,
+          }));
+          setScreen((current) => (current === 'login' ? 'home' : current));
+        }
+        setIsRestoringAuth(false);
+      });
+    } catch {
+      // The app remains usable until Firebase credentials are configured.
+      const timeout = setTimeout(() => setIsRestoringAuth(false), 0);
+      return () => clearTimeout(timeout);
+    }
+  }, [service]);
 
   useEffect(() => {
     let timeout: ReturnType<typeof setTimeout>;
@@ -147,9 +206,9 @@ export function useBarberShop(service: BarberShopService) {
     }
   };
 
-  const updateUsername = (value: string) => {
-    setUsername(value);
-    setLoginErrors((current) => ({ ...current, username: undefined }));
+  const updateEmail = (value: string) => {
+    setEmail(value);
+    setLoginErrors((current) => ({ ...current, email: undefined }));
   };
 
   const updatePassword = (value: string) => {
@@ -171,7 +230,7 @@ export function useBarberShop(service: BarberShopService) {
   };
 
   const showCreateAccount = () => {
-    setCreateAccountForm({ username: '', password: '' });
+    setCreateAccountForm({ email: '', password: '' });
     setCreateAccountErrors({});
     setScreen('createAccount');
   };
@@ -188,7 +247,7 @@ export function useBarberShop(service: BarberShopService) {
     setIsCreatingAccount(true);
     try {
       const result = await service.createAccount(
-        createAccountForm.username,
+        createAccountForm.email,
         createAccountForm.password,
       );
       if (!result.valid) {
@@ -197,20 +256,18 @@ export function useBarberShop(service: BarberShopService) {
       }
 
       setProfile(result.profile);
-      setUsername(result.profile.username);
+      setEmail(result.profile.username);
       setPassword('');
       setForm((current) => ({
         ...current,
         name: result.profile.displayName,
       }));
-      setCreateAccountForm({ username: '', password: '' });
+      setCreateAccountForm({ email: '', password: '' });
       setScreen('home');
     } catch (error) {
       Alert.alert(
         'No se pudo crear la cuenta',
-        error instanceof Error
-          ? error.message
-          : 'Ocurrió un error inesperado.',
+        getAuthErrorMessage(error),
       );
     } finally {
       setIsCreatingAccount(false);
@@ -218,7 +275,7 @@ export function useBarberShop(service: BarberShopService) {
   };
 
   const backToLogin = () => {
-    setCreateAccountForm({ username: '', password: '' });
+    setCreateAccountForm({ email: '', password: '' });
     setCreateAccountErrors({});
     setScreen('login');
   };
@@ -241,10 +298,10 @@ export function useBarberShop(service: BarberShopService) {
     }
   };
 
-  const loadProfileRequests = async (username: string) => {
+  const loadProfileRequests = async (emailAddress: string) => {
     setIsLoadingProfileRequests(true);
     try {
-      setProfileRequests(await service.getUserRequests(username));
+      setProfileRequests(await service.getUserRequests(emailAddress));
     } catch (error) {
       Alert.alert(
         'No se pudieron cargar tus citas',
@@ -309,23 +366,23 @@ export function useBarberShop(service: BarberShopService) {
   };
 
   const signIn = async () => {
-    const errors = service.validateLogin(username, password);
+    const errors = service.validateLogin(email, password);
     setLoginErrors(errors);
 
     if (Object.keys(errors).length > 0) return;
 
     setIsSigningIn(true);
     try {
-      const authenticatedProfile = await service.signIn(username, password);
+      const authenticatedProfile = await service.signIn(email, password);
       if (!authenticatedProfile) {
         setLoginErrors({
-          password: 'Usuario o contraseña incorrectos. Si aún no tienes cuenta, créala aquí.',
+          password: 'El correo o la contraseña son incorrectos.',
         });
         return;
       }
 
       setProfile(authenticatedProfile);
-      setUsername(authenticatedProfile.username);
+      setEmail(authenticatedProfile.username);
       setPassword('');
       setForm((current) => ({
         ...current,
@@ -335,9 +392,7 @@ export function useBarberShop(service: BarberShopService) {
     } catch (error) {
       Alert.alert(
         'No se pudo iniciar sesión',
-        error instanceof Error
-          ? error.message
-          : 'Ocurrió un error inesperado.',
+        getAuthErrorMessage(error),
       );
     } finally {
       setIsSigningIn(false);
@@ -440,11 +495,11 @@ export function useBarberShop(service: BarberShopService) {
       }
 
       setFormErrors({});
-      const selectedPromotion = PROMOTIONS.find(
+      const selectedPromotion = catalogs.promotions.find(
         (promotion) => promotion.id === form.promotion,
       );
       const promotionText = selectedPromotion
-        ? ` También seleccionaste: ${selectedPromotion.title} (${selectedPromotion.discount}).`
+        ? ` También seleccionaste: ${selectedPromotion.name} (${selectedPromotion.discount}).`
         : '';
       Alert.alert(
         editingRequest ? 'Cita actualizada' : 'Solicitud registrada',
@@ -521,11 +576,29 @@ export function useBarberShop(service: BarberShopService) {
     );
   };
 
+  const signOut = async () => {
+    try {
+      await service.signOut();
+      availabilityRequest.current += 1;
+      setProfile(null);
+      setProfileRequests([]);
+      setEditingRequest(null);
+      setPassword('');
+      setForm(EMPTY_FORM);
+      setFormErrors({});
+      setScreen('login');
+    } catch (error) {
+      Alert.alert('No se pudo cerrar sesión', getAuthErrorMessage(error));
+    }
+  };
+
   return {
     screen,
-    username,
+    email,
     password,
     profile,
+    catalogs,
+    isCatalogAdmin: profile?.uid === CATALOG_ADMIN_UID,
     profileRequests,
     isLoadingProfileRequests,
     editingRequest,
@@ -537,12 +610,13 @@ export function useBarberShop(service: BarberShopService) {
     formErrors,
     isSubmitting,
     isSigningIn,
+    isRestoringAuth,
     bookedTimes,
     cancelableTimes,
     isLoadingAvailability,
     availabilityError,
     refreshAvailability,
-    updateUsername,
+    updateEmail,
     updatePassword,
     updateForm,
     signIn,
@@ -556,20 +630,12 @@ export function useBarberShop(service: BarberShopService) {
     editBooking,
     backFromRegister,
     showHome: () => setScreen('home'),
+    showBusinessManagement: () => setScreen('business'),
     showProfile,
     showRegister,
     selectService,
     selectBarber,
     selectPromotion,
-    signOut: () => {
-      availabilityRequest.current += 1;
-      setProfile(null);
-      setProfileRequests([]);
-      setEditingRequest(null);
-      setPassword('');
-      setForm(EMPTY_FORM);
-      setFormErrors({});
-      setScreen('login');
-    },
+    signOut,
   };
 }

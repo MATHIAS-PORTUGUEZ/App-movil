@@ -10,7 +10,7 @@ export type FieldProps = {
   error?: string;
   multiline?: boolean;
   inputClassName?: string;
-  keyboardType?: 'default' | 'phone-pad';
+  keyboardType?: 'default' | 'phone-pad' | 'email-address' | 'decimal-pad';
   autoCapitalize?: 'none' | 'sentences' | 'words';
   secureTextEntry?: boolean;
   showPasswordToggle?: boolean;

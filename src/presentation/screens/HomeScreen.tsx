@@ -4,12 +4,9 @@ import { ActionButton } from '../components/ActionButton';
 import { BarberShopLogo } from '../components/BarberShopLogo';
 import { Field } from '../components/Field';
 import { SurfaceCard } from '../components/SurfaceCard';
-import {
-  BARBERS,
-  PROMOTIONS,
-  SERVICE_TYPES,
-} from '../../domain/models';
+import { HairCareInfoCard } from '../components/HairCareInfoCard';
 import type {
+  CatalogItem,
   BarberName,
   PromotionId,
   RequestErrors,
@@ -30,24 +27,16 @@ type HomeScreenProps = {
   onSelectPromotion: (promotion: PromotionId | '') => void;
   onRegister: () => void;
   onOpenProfile: () => void;
+  services: CatalogItem[];
+  barbers: CatalogItem[];
+  promotions: CatalogItem[];
+  isCatalogAdmin: boolean;
+  onManageBusiness: () => void;
 };
 
 const TABS: HomeTab[] = ['Servicio', 'Barberos', 'Promo'];
 
-const SERVICE_DETAILS: Record<ServiceType, string> = {
-  'Low Fade': 'Degradado bajo y limpio, cerca de la parte inferior.',
-  Mullet: 'Laterales y frente cortos; la parte trasera queda más larga.',
-  Taper: 'Degradado clásico y sutil en patillas y nuca.',
-  'Corte personalizado': 'Cuéntanos el corte que tienes en mente.',
-};
-
-const BARBER_DETAILS: Record<BarberName, string> = {
-  Messi: 'Precisión y estilo clásico',
-  Ronaldo: 'Detalle y acabado definido',
-  Neymar: 'Creatividad para tu próximo look',
-};
-
-const BARBER_PHOTOS: Record<BarberName, number> = {
+const BARBER_PHOTOS: Record<string, number> = {
   Messi: require('../../../assets/barber-messi.jpg'),
   Ronaldo: require('../../../assets/barber-ronaldo.jpg'),
   Neymar: require('../../../assets/barber-neymar.jpg'),
@@ -75,6 +64,11 @@ export function HomeScreen({
   onSelectPromotion,
   onRegister,
   onOpenProfile,
+  services,
+  barbers,
+  promotions,
+  isCatalogAdmin,
+  onManageBusiness,
 }: HomeScreenProps) {
   const [activeTab, setActiveTab] = useState<HomeTab>('Servicio');
   const canContinue =
@@ -108,6 +102,12 @@ export function HomeScreen({
           )}
         </Pressable>
       </View>
+
+      {isCatalogAdmin ? (
+        <Pressable accessibilityRole="button" onPress={onManageBusiness} className="self-start rounded-xl border border-[#00BFFF] px-4 py-2 active:opacity-75">
+          <Text className="font-semibold text-[#00BFFF]">Administrar negocio</Text>
+        </Pressable>
+      ) : null}
 
       <BarberShopLogo variant="hero" />
 
@@ -145,15 +145,15 @@ export function HomeScreen({
         <View className="gap-3">
           <Text className="text-xl font-bold text-white">Elige tu corte</Text>
           <SurfaceCard className="gap-3 p-4">
-            {SERVICE_TYPES.map((service) => {
-              const selected = form.service === service;
+            {services.map((item) => {
+              const selected = form.service === item.name;
               return (
                 <Pressable
-                  key={service}
+                  key={item.id}
                   accessibilityRole="radio"
                   accessibilityState={{ selected }}
                   onPress={() => {
-                    onSelectService(selected ? '' : service);
+                    onSelectService(selected ? '' : item.name);
                     setActiveTab('Barberos');
                   }}
                   className={`min-h-[72px] flex-row items-center rounded-xl border px-4 py-3 active:opacity-80 ${
@@ -166,10 +166,11 @@ export function HomeScreen({
                     <Text className="text-lg text-white">✂</Text>
                   </View>
                   <View className="flex-1">
-                    <Text className="font-bold text-white">{service}</Text>
+                    <Text className="font-bold text-white">{item.name}</Text>
                     <Text className="mt-1 text-xs leading-4 text-white/75">
-                      {SERVICE_DETAILS[service]}
+                      {item.description}
                     </Text>
+                    {item.price ? <Text className="mt-1 text-xs font-bold text-white">{item.price}</Text> : null}
                   </View>
                   <SelectionMark selected={selected} />
                 </Pressable>
@@ -213,16 +214,19 @@ export function HomeScreen({
             />
           ) : null}
           <SurfaceCard className="gap-3 p-4">
-            {BARBERS.map((barber) => {
-              const selected = form.barber === barber;
+            {barbers.map((barber) => {
+              const selected = form.barber === barber.name;
+              const barberPhoto = BARBER_PHOTOS[barber.name];
+              const occupied = barber.isOccupied === true;
               return (
                 <Pressable
-                  key={barber}
+                  key={barber.id}
                   accessibilityRole="radio"
-                  accessibilityState={{ selected }}
+                  accessibilityState={{ selected, disabled: occupied }}
                   onPress={() =>
-                    onSelectBarber(selected ? '' : barber)
+                    onSelectBarber(selected ? '' : barber.name)
                   }
+                  disabled={occupied}
                   className={`min-h-[88px] flex-row items-center rounded-xl border px-4 py-3 active:opacity-80 ${
                     selected
                       ? 'border-[#00BFFF] bg-[#1A2A3A]'
@@ -230,20 +234,28 @@ export function HomeScreen({
                   }`}
                 >
                   <View className="mr-3 h-16 w-16 overflow-hidden rounded-full border border-white/30 bg-[#2E3450]">
-                    <Image
-                      source={BARBER_PHOTOS[barber]}
-                      accessibilityLabel={`Foto de ${barber}`}
-                      resizeMode="cover"
-                      style={{ width: '100%', height: '100%' }}
-                    />
+                    {barber.photoUrl ? (
+                      <Image source={{ uri: barber.photoUrl }} accessibilityLabel={`Foto de ${barber.name}`} resizeMode="cover" style={{ width: '100%', height: '100%' }} />
+                    ) : barberPhoto ? (
+                      <Image
+                        source={barberPhoto}
+                        accessibilityLabel={`Foto de ${barber.name}`}
+                        resizeMode="cover"
+                        style={{ width: '100%', height: '100%' }}
+                      />
+                    ) : (
+                      <View className="flex-1 items-center justify-center"><Text className="text-lg font-bold text-white">{barber.name.slice(0, 1).toUpperCase()}</Text></View>
+                    )}
                   </View>
                   <View className="flex-1">
-                    <Text className="font-bold text-white">{barber}</Text>
+                    <Text className="font-bold text-white">{barber.name}</Text>
                     <Text className="mt-1 text-xs text-white/75">
-                      {BARBER_DETAILS[barber]}
+                      {barber.description}
                     </Text>
                   </View>
-                  <SelectionMark selected={selected} />
+                  {occupied ? (
+                    <View className="rounded-full border border-[#F87171] bg-[#542B35] px-3 py-2"><Text className="text-xs font-bold text-[#FCA5A5]">Ocupado</Text></View>
+                  ) : <SelectionMark selected={selected} />}
                 </Pressable>
               );
             })}
@@ -269,7 +281,7 @@ export function HomeScreen({
             Elige una promo opcional para incluirla en tu solicitud.
           </Text>
           <SurfaceCard className="gap-3 p-4">
-            {PROMOTIONS.map((promotion) => {
+            {promotions.map((promotion) => {
               const selected = form.promotion === promotion.id;
               return (
                 <Pressable
@@ -290,7 +302,7 @@ export function HomeScreen({
                   </View>
                   <View className="flex-1">
                     <Text className="font-bold text-white">
-                      {promotion.title}
+                    {promotion.name}
                     </Text>
                     <Text className="mt-1 text-xs text-white/75">
                       {promotion.description}
@@ -331,6 +343,8 @@ export function HomeScreen({
           accessibilityHint="Continúa para elegir día, horario y completar tus datos"
         />
       </View>
+
+      <HairCareInfoCard />
     </View>
   );
 }

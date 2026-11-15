@@ -47,6 +47,7 @@ export function ProfileScreen({
   const [newPassword, setNewPassword] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [editMode, setEditMode] = useState<EditMode>('none');
+  const [profileErrors, setProfileErrors] = useState<{ name?: string; currentPassword?: string; newPassword?: string }>({});
 
   const choosePhoto = async () => {
     try {
@@ -82,6 +83,7 @@ export function ProfileScreen({
     setPhotoUri(profile.photoUri);
     setCurrentPassword('');
     setNewPassword('');
+    setProfileErrors({});
     setEditMode('name');
   };
 
@@ -90,6 +92,7 @@ export function ProfileScreen({
     setPhotoUri(profile.photoUri);
     setCurrentPassword('');
     setNewPassword('');
+    setProfileErrors({});
     setEditMode('password');
   };
 
@@ -98,10 +101,21 @@ export function ProfileScreen({
     setPhotoUri(profile.photoUri);
     setCurrentPassword('');
     setNewPassword('');
+    setProfileErrors({});
     setEditMode('none');
   };
 
   const saveName = async () => {
+    const name = displayName.trim();
+    if (name.length < 2) {
+      setProfileErrors({ name: 'Escribe al menos 2 caracteres.' });
+      return;
+    }
+    if (name.length > 60) {
+      setProfileErrors({ name: 'El nombre no puede superar 60 caracteres.' });
+      return;
+    }
+    setProfileErrors({});
     setIsSaving(true);
     try {
       const saved = await onSave(displayName, photoUri, '', '');
@@ -113,6 +127,11 @@ export function ProfileScreen({
   };
 
   const savePassword = async () => {
+    const nextErrors: typeof profileErrors = {};
+    if (!currentPassword) nextErrors.currentPassword = 'Escribe tu contraseña actual.';
+    if (newPassword.length < 6) nextErrors.newPassword = 'La nueva contraseña debe tener al menos 6 caracteres.';
+    setProfileErrors(nextErrors);
+    if (Object.keys(nextErrors).length > 0) return;
     setIsSaving(true);
     try {
       const saved = await onSave(
@@ -177,7 +196,7 @@ export function ProfileScreen({
                 {profile.displayName}
               </Text>
               <Text className="text-sm text-white/70">
-                @{profile.username}
+                Correo: {profile.username}
               </Text>
             </View>
           ) : null}
@@ -191,9 +210,10 @@ export function ProfileScreen({
             <Field
               label="Nombre"
               value={displayName}
-              onChangeText={setDisplayName}
+              onChangeText={(value) => { setDisplayName(value); setProfileErrors((current) => ({ ...current, name: undefined })); }}
               placeholder="Tu nombre"
               autoCapitalize="words"
+              error={profileErrors.name}
             />
             <View className="flex-row gap-3">
               <View className="flex-1">
@@ -234,20 +254,22 @@ export function ProfileScreen({
             <Field
               label="Contraseña actual"
               value={currentPassword}
-              onChangeText={setCurrentPassword}
+              onChangeText={(value) => { setCurrentPassword(value); setProfileErrors((current) => ({ ...current, currentPassword: undefined })); }}
               placeholder="Escribe tu contraseña actual"
               secureTextEntry
               showPasswordToggle
               autoCapitalize="none"
+              error={profileErrors.currentPassword}
             />
             <Field
               label="Nueva contraseña"
               value={newPassword}
-              onChangeText={setNewPassword}
+              onChangeText={(value) => { setNewPassword(value); setProfileErrors((current) => ({ ...current, newPassword: undefined })); }}
               placeholder="Escribe una nueva contraseña"
               secureTextEntry
               showPasswordToggle
               autoCapitalize="none"
+              error={profileErrors.newPassword}
             />
             <View className="flex-row gap-3">
               <View className="flex-1">

@@ -29,34 +29,42 @@ export class BarberShopService {
     private readonly profileRepository: ProfileRepository,
   ) {}
 
-  validateLogin(username: string, password: string): LoginErrors {
-    return validateLogin(username, password);
+  validateLogin(email: string, password: string): LoginErrors {
+    return validateLogin(email, password);
   }
 
   async signIn(
-    username: string,
+    email: string,
     password: string,
   ): Promise<UserProfile | null> {
-    return this.profileRepository.signIn(username, password);
+    return this.profileRepository.signIn(email, password);
+  }
+
+  async signOut(): Promise<void> {
+    await this.profileRepository.signOut();
+  }
+
+  observeAuthState(listener: (profile: UserProfile | null) => void) {
+    return this.profileRepository.observeAuthState(listener);
   }
 
   async createAccount(
-    username: string,
+    email: string,
     password: string,
   ): Promise<CreateAccountResult> {
-    const errors = validateCreateAccount(username, password);
+    const errors = validateCreateAccount(email, password);
     if (Object.keys(errors).length > 0) {
       return { valid: false, errors };
     }
 
     const profile = await this.profileRepository.createAccount(
-      username.trim(),
+      email.trim(),
       password,
     );
     if (!profile) {
       return {
         valid: false,
-        errors: { username: 'Ese nombre de usuario ya está registrado.' },
+        errors: { email: 'Ese correo ya está registrado.' },
       };
     }
 

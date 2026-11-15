@@ -1,9 +1,11 @@
 import { StatusBar } from 'expo-status-bar';
 import { useMemo } from 'react';
 import {
+  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Text,
   View,
 } from 'react-native';
 import {
@@ -12,26 +14,34 @@ import {
 } from 'react-native-safe-area-context';
 import './global.css';
 import { BarberShopService } from './src/application/BarberShopService';
-import { AsyncStorageProfileRepository } from './src/infrastructure/repositories/AsyncStorageProfileRepository';
-import { AsyncStorageRequestRepository } from './src/infrastructure/repositories/AsyncStorageRequestRepository';
+import { SQLiteProfileRepository } from './src/infrastructure/repositories/SQLiteProfileRepository';
+import { SQLiteRequestRepository } from './src/infrastructure/repositories/SQLiteRequestRepository';
+import { FirestoreRequestRepository } from './src/infrastructure/repositories/FirestoreRequestRepository';
+import { SyncedRequestRepository } from './src/infrastructure/repositories/SyncedRequestRepository';
 import { useBarberShop } from './src/presentation/useBarberShop';
 import { CreateAccountScreen } from './src/presentation/screens/CreateAccountScreen';
 import { HomeScreen } from './src/presentation/screens/HomeScreen';
 import { LoginScreen } from './src/presentation/screens/LoginScreen';
 import { RegisterScreen } from './src/presentation/screens/RegisterScreen';
 import { ProfileScreen } from './src/presentation/screens/ProfileScreen';
+import { CatalogManagementScreen } from './src/presentation/screens/CatalogManagementScreen';
+import { FirestoreCatalogRepository } from './src/infrastructure/repositories/FirestoreCatalogRepository';
 
 export default function App() {
   const service = useMemo(
     () =>
       new BarberShopService(
-        new AsyncStorageRequestRepository(),
-        new AsyncStorageProfileRepository(),
+        new SyncedRequestRepository(
+          new FirestoreRequestRepository(),
+          new SQLiteRequestRepository(),
+        ),
+        new SQLiteProfileRepository(),
       ),
     [],
   );
+  const catalogRepository = useMemo(() => new FirestoreCatalogRepository(), []);
 
-  const barberShop = useBarberShop(service);
+  const barberShop = useBarberShop(service, catalogRepository);
 
   return (
     <SafeAreaProvider>
@@ -50,13 +60,18 @@ export default function App() {
             showsVerticalScrollIndicator={false}
           >
             <View className="w-full max-w-[720px] flex-1 self-center px-5">
-              {barberShop.screen === 'login' ? (
+              {barberShop.isRestoringAuth ? (
+                <View className="flex-1 items-center justify-center gap-3">
+                  <ActivityIndicator color="#00BFFF" />
+                  <Text className="text-sm text-white/75">Comprobando sesión…</Text>
+                </View>
+              ) : barberShop.screen === 'login' ? (
                 <LoginScreen
-                  username={barberShop.username}
+                  email={barberShop.email}
                   password={barberShop.password}
                   errors={barberShop.loginErrors}
                   isSigningIn={barberShop.isSigningIn}
-                  onUsernameChange={barberShop.updateUsername}
+                  onEmailChange={barberShop.updateEmail}
                   onPasswordChange={barberShop.updatePassword}
                   onSignIn={barberShop.signIn}
                   onCreateAccount={barberShop.showCreateAccount}
@@ -84,6 +99,11 @@ export default function App() {
                         onSelectPromotion={barberShop.selectPromotion}
                         onRegister={barberShop.showRegister}
                         onOpenProfile={barberShop.showProfile}
+                        services={barberShop.catalogs.services}
+                        barbers={barberShop.catalogs.barbers}
+                        promotions={barberShop.catalogs.promotions}
+                        isCatalogAdmin={barberShop.isCatalogAdmin}
+                        onManageBusiness={barberShop.showBusinessManagement}
                       />
                     ) : null
                   ) : null}
@@ -103,6 +123,7 @@ export default function App() {
                       onChange={barberShop.updateForm}
                       onSubmit={barberShop.submitRequest}
                       onBack={barberShop.backFromRegister}
+                      promotions={barberShop.catalogs.promotions}
                     />
                   ) : null}
 
@@ -121,6 +142,13 @@ export default function App() {
                       onEditBooking={barberShop.editBooking}
                       onBack={barberShop.showHome}
                       onLogout={barberShop.signOut}
+                    />
+                  ) : null}
+
+                  {barberShop.screen === 'business' && barberShop.isCatalogAdmin ? (
+                    <CatalogManagementScreen
+                      repository={catalogRepository}
+                      onBack={barberShop.showHome}
                     />
                   ) : null}
                 </View>

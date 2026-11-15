@@ -3,8 +3,8 @@ import { Modal, Pressable, ScrollView, Text, View } from 'react-native';
 import { ActionButton } from '../components/ActionButton';
 import { Field } from '../components/Field';
 import { SurfaceCard } from '../components/SurfaceCard';
-import { getLocalDateKey, PROMOTIONS } from '../../domain/models';
-import type { RequestErrors, RequestForm } from '../../domain/models';
+import { getLocalDateKey } from '../../domain/models';
+import type { CatalogItem, RequestErrors, RequestForm } from '../../domain/models';
 
 type RegisterScreenProps = {
   form: RequestForm;
@@ -20,6 +20,7 @@ type RegisterScreenProps = {
   onChange: (field: keyof RequestForm, value: string) => void;
   onSubmit: () => void;
   onBack: () => void;
+  promotions: CatalogItem[];
 };
 
 const TIME_SLOTS = [
@@ -97,6 +98,7 @@ export function RegisterScreen({
   onChange,
   onSubmit,
   onBack,
+  promotions,
 }: RegisterScreenProps) {
   const [visibleMonth, setVisibleMonth] = useState(() => {
     const today = new Date();
@@ -448,13 +450,13 @@ export function RegisterScreen({
             </Text>
             <View className="min-h-[54px] justify-center rounded-xl border border-white/40 bg-white px-4 py-3">
               <Text className="text-base font-medium text-[#161616]">
-                {PROMOTIONS.find((item) => item.id === form.promotion)?.title}
+                {promotions.find((item) => item.id === form.promotion)?.name}
               </Text>
             </View>
           </View>
         ) : null}
         <Field
-          label="Descripción"
+          label="Comentario adicional (opcional)"
           value={form.description}
           onChangeText={(value) => onChange('description', value)}
           placeholder="¿Tienes alguna sugerencia o comentario adicional?"

@@ -1,0 +1,109 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isBusinessAdmin() {
+      return request.auth != null
+        && request.auth.uid == 'SVsoML3WwtZcQqScpMJM3mrovuo1';
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function validAppointment(userId) {
+      return request.resource.data.keys().hasAll([
+          'ownerUid', 'ownerUsername', 'name', 'phone', 'service',
+          'customService', 'barber', 'promotion', 'description',
+          'appointmentDate', 'appointmentTime', 'submittedAt', 'slotId'
+        ])
+        && request.resource.data.keys().hasOnly([
+          'ownerUid', 'ownerUsername', 'name', 'phone', 'service',
+          'customService', 'barber', 'promotion', 'description',
+          'appointmentDate', 'appointmentTime', 'submittedAt', 'slotId'
+        ])
+        && request.resource.data.ownerUid == userId
+        && request.resource.data.ownerUsername is string
+        && request.resource.data.name is string
+        && request.resource.data.phone is string
+        && request.resource.data['service'] is string
+        && request.resource.data.customService is string
+        && request.resource.data.barber is string
+        && request.resource.data.promotion is string
+        && request.resource.data.description is string
+        && request.resource.data.appointmentDate is string
+        && request.resource.data.appointmentTime is string
+        && request.resource.data.submittedAt is string
+        && request.resource.data.slotId is string;
+    }
+
+    function appointmentSlotMatches(userId, appointmentId, appointmentData) {
+      let slotPath = /databases/$(database)/documents/appointmentSlots/$(appointmentData.slotId);
+      return existsAfter(slotPath)
+        && getAfter(slotPath).data.ownerUid == userId
+        && getAfter(slotPath).data.appointmentId == appointmentId
+        && getAfter(slotPath).data.appointmentDate == appointmentData.appointmentDate
+        && getAfter(slotPath).data.appointmentTime == appointmentData.appointmentTime;
+    }
+
+    function slotMatchesAppointment(userId, appointmentId, slotId, appointmentDate, appointmentTime) {
+      let appointmentPath = /databases/$(database)/documents/users/$(userId)/appointments/$(appointmentId);
+      return existsAfter(appointmentPath)
+        && getAfter(appointmentPath).data.ownerUid == userId
+        && getAfter(appointmentPath).data.slotId == slotId
+        && getAfter(appointmentPath).data.appointmentDate == appointmentDate
+        && getAfter(appointmentPath).data.appointmentTime == appointmentTime;
+    }
+
+    match /services/{itemId} {
+      allow read: if true;
+      allow write: if isBusinessAdmin();
+    }
+    match /barbers/{itemId} {
+      allow read: if true;
+      allow write: if isBusinessAdmin();
+    }
+    match /promotions/{itemId} {
+      allow read: if true;
+      allow write: if isBusinessAdmin();
+    }
+
+    match /users/{userId}/appointments/{appointmentId} {
+      allow read: if isSignedIn() && request.auth.uid == userId;
+      allow create, update: if isSignedIn()
+        && request.auth.uid == userId
+        && validAppointment(userId)
+        && appointmentSlotMatches(userId, appointmentId, request.resource.data);
+      allow delete: if isSignedIn()
+        && request.auth.uid == userId
+        && resource.data.ownerUid == userId
+        && !existsAfter(/databases/$(database)/documents/appointmentSlots/$(resource.data.slotId));
+    }
+
+    match /appointmentSlots/{slotId} {
+      allow read: if isSignedIn();
+      allow create, update: if isSignedIn()
+        && request.resource.data.keys().hasOnly([
+          'appointmentId', 'appointmentDate', 'appointmentTime', 'ownerUid'
+        ])
+        && request.resource.data.keys().hasAll([
+          'appointmentId', 'appointmentDate', 'appointmentTime', 'ownerUid'
+        ])
+        && request.resource.data.ownerUid == request.auth.uid
+        && request.resource.data.appointmentId is string
+        && request.resource.data.appointmentDate is string
+        && request.resource.data.appointmentTime is string
+        && slotMatchesAppointment(
+          request.auth.uid,
+          request.resource.data.appointmentId,
+          slotId,
+          request.resource.data.appointmentDate,
+          request.resource.data.appointmentTime
+        );
+      allow delete: if isSignedIn()
+        && resource.data.ownerUid == request.auth.uid
+        && (!existsAfter(/databases/$(database)/documents/users/$(request.auth.uid)/appointments/$(resource.data.appointmentId))
+          || getAfter(/databases/$(database)/documents/users/$(request.auth.uid)/appointments/$(resource.data.appointmentId)).data.slotId != slotId);
+    }
+  }
+}
+

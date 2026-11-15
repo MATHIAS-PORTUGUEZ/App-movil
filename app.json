@@ -10,6 +10,7 @@
       "supportsTablet": true
     },
     "android": {
+      "package": "com.appmovil.barberia",
       "adaptiveIcon": {
         "backgroundColor": "#111210",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -30,7 +31,8 @@
           "cameraPermission": false,
           "microphonePermission": false
         }
-      ]
+      ],
+      "expo-sqlite"
     ]
   }
 }

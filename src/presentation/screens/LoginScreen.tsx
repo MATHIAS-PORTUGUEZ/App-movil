@@ -6,22 +6,22 @@ import { SurfaceCard } from '../components/SurfaceCard';
 import type { LoginErrors } from '../../domain/models';
 
 type LoginScreenProps = {
-  username: string;
+  email: string;
   password: string;
   errors: LoginErrors;
   isSigningIn: boolean;
-  onUsernameChange: (value: string) => void;
+  onEmailChange: (value: string) => void;
   onPasswordChange: (value: string) => void;
   onSignIn: () => void;
   onCreateAccount: () => void;
 };
 
 export function LoginScreen({
-  username,
+  email,
   password,
   errors,
   isSigningIn,
-  onUsernameChange,
+  onEmailChange,
   onPasswordChange,
   onSignIn,
   onCreateAccount,
@@ -51,12 +51,13 @@ export function LoginScreen({
           </Text>
         </View>
         <Field
-          label="Usuario"
-          value={username}
-          onChangeText={onUsernameChange}
-          placeholder="Escribe tu usuario"
+          label="Correo electrónico"
+          value={email}
+          onChangeText={onEmailChange}
+          placeholder="tucorreo@ejemplo.com"
           autoCapitalize="none"
-          error={errors.username}
+          keyboardType="email-address"
+          error={errors.email}
           returnKeyType="next"
         />
         <Field

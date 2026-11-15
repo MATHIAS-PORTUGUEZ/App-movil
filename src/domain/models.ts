@@ -1,12 +1,19 @@
-export type ServiceType =
-  | 'Low Fade'
-  | 'Mullet'
-  | 'Taper'
-  | 'Corte personalizado';
+export type ServiceType = string;
 
-export type BarberName = 'Messi' | 'Ronaldo' | 'Neymar';
+export type BarberName = string;
 
-export type PromotionId = 'fade-day' | 'full-style' | 'first-visit';
+export type PromotionId = string;
+
+export type CatalogItem = {
+  id: string;
+  name: string;
+  description: string;
+  price: string;
+  discount: string;
+  photoUrl?: string | null;
+  photoPath?: string | null;
+  isOccupied?: boolean;
+};
 
 export type Promotion = {
   id: PromotionId;
@@ -31,20 +38,21 @@ export type UserProfile = {
   username: string;
   displayName: string;
   photoUri: string | null;
+  uid?: string;
 };
 
 export type CreateAccountForm = {
-  username: string;
+  email: string;
   password: string;
 };
 
 export type LoginErrors = {
-  username?: string;
+  email?: string;
   password?: string;
 };
 
 export type CreateAccountErrors = {
-  username?: string;
+  email?: string;
   password?: string;
 };
 
@@ -53,6 +61,7 @@ export type RequestErrors = Partial<Record<keyof RequestForm, string>>;
 export type SubmittedRequest = RequestForm & {
   submittedAt: string;
   ownerUsername?: string;
+  ownerUid?: string;
 };
 
 export const SERVICE_TYPES: ServiceType[] = [

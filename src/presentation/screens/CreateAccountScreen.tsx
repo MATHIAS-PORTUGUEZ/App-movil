@@ -44,17 +44,18 @@ export function CreateAccountScreen({
         <View className="gap-1">
           <Text className="text-xl font-bold text-white">Tus datos de acceso</Text>
           <Text className="text-sm leading-5 text-white/70">
-            Elige un nombre de usuario y crea una contraseña.
+            Usa tu correo electrónico y crea una contraseña.
           </Text>
         </View>
 
         <Field
-          label="Nombre de usuario"
-          value={form.username}
-          onChangeText={(value) => onChange('username', value)}
-          placeholder="Por ejemplo, mateo23"
+          label="Correo electrónico"
+          value={form.email}
+          onChangeText={(value) => onChange('email', value)}
+          placeholder="tucorreo@ejemplo.com"
           autoCapitalize="none"
-          error={errors.username}
+          keyboardType="email-address"
+          error={errors.email}
           returnKeyType="next"
         />
         <View className="gap-2">
@@ -91,7 +92,7 @@ export function CreateAccountScreen({
       </SurfaceCard>
 
       <Text className="mt-5 text-center text-xs leading-5 text-white/60">
-        Tu cuenta se guarda en este dispositivo.
+        Tu inicio de sesión se administra con Firebase.
       </Text>
     </View>
   );
