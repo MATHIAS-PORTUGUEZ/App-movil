@@ -233,20 +233,29 @@ export function HomeScreen({
                       : 'border-white/40 bg-[#20212a]'
                   }`}
                 >
-                  <View className="mr-3 h-16 w-16 overflow-hidden rounded-full border border-white/30 bg-[#2E3450]">
-                    {barber.photoUrl ? (
-                      <Image source={{ uri: barber.photoUrl }} accessibilityLabel={`Foto de ${barber.name}`} resizeMode="cover" style={{ width: '100%', height: '100%' }} />
-                    ) : barberPhoto ? (
-                      <Image
-                        source={barberPhoto}
-                        accessibilityLabel={`Foto de ${barber.name}`}
-                        resizeMode="cover"
-                        style={{ width: '100%', height: '100%' }}
-                      />
-                    ) : (
-                      <View className="flex-1 items-center justify-center"><Text className="text-lg font-bold text-white">{barber.name.slice(0, 1).toUpperCase()}</Text></View>
-                    )}
-                  </View>
+                  {barber.photoUrl ? (
+                    <Image
+                      className="mr-3 border border-white/30 bg-[#2E3450]"
+                      source={{ uri: barber.photoUrl }}
+                      accessibilityLabel={`Foto de ${barber.name}`}
+                      resizeMode="cover"
+                      style={{ width: 64, height: 64, borderRadius: 32 }}
+                    />
+                  ) : barberPhoto ? (
+                    <Image
+                      className="mr-3 border border-white/30 bg-[#2E3450]"
+                      source={barberPhoto}
+                      accessibilityLabel={`Foto de ${barber.name}`}
+                      resizeMode="cover"
+                      style={{ width: 64, height: 64, borderRadius: 32 }}
+                    />
+                  ) : (
+                    <View className="mr-3 h-16 w-16 items-center justify-center rounded-full border border-white/30 bg-[#2E3450]">
+                      <Text className="text-lg font-bold text-white">
+                        {barber.name.slice(0, 1).toUpperCase()}
+                      </Text>
+                    </View>
+                  )}
                   <View className="flex-1">
                     <Text className="font-bold text-white">{barber.name}</Text>
                     <Text className="mt-1 text-xs text-white/75">
